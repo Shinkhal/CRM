@@ -1,0 +1,715 @@
+import { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import axios from '../api/axios';
+import Navbar from '../components/Navbar';
+import { useNavigate } from 'react-router-dom';
+
+const Campaigns = () => {
+  const [form, setForm] = useState({
+    name: '',
+    message: '',
+    segmentRules: '',
+  });
+
+  const [matchedUsers, setMatchedUsers] = useState([]);
+  const [loading, setLoading] = useState({ preview: false, submit: false, ai: false });
+  const [isRulesEditable, setIsRulesEditable] = useState(false);
+  const [ruleBlocks, setRuleBlocks] = useState([]);
+  const navigate = useNavigate();
+
+  // Format dates consistently throughout the application
+  const formatDate = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    return d instanceof Date && !isNaN(d) ? d.toISOString().split('T')[0] : null;
+  };
+
+  // Convert API format to UI format for rule consistency
+  const apiToUiRuleFormat = (apiRule) => {
+    const uiRule = {};
+    
+    // Convert backend field names to frontend field names
+    if (apiRule.spent !== undefined) uiRule.totalSpend = apiRule.spent;
+    if (apiRule.orders !== undefined) uiRule.totalOrders = apiRule.orders;
+    if (apiRule.lastOrderDate !== undefined) uiRule.lastOrderDate = apiRule.lastOrderDate;
+    if (apiRule.createdAt !== undefined) uiRule.createdAt = apiRule.createdAt;
+    
+    return uiRule;
+  };
+
+  // Convert UI format to API format for rule consistency
+  const uiToApiRuleFormat = (uiRule) => {
+    const apiRule = {};
+    
+    // Convert frontend field names to backend field names
+    if (uiRule.totalSpend !== undefined) apiRule.spent = uiRule.totalSpend;
+    if (uiRule.totalOrders !== undefined) apiRule.orders = uiRule.totalOrders;
+    if (uiRule.lastOrderDate !== undefined) apiRule.lastOrderDate = uiRule.lastOrderDate;
+    if (uiRule.createdAt !== undefined) apiRule.createdAt = uiRule.createdAt;
+    
+    return apiRule;
+  };
+
+  // Handles form field changes
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  // Handle rules JSON direct editing
+  const handleRulesChange = (e) => {
+    const newRulesJson = e.target.value;
+    setForm({ ...form, segmentRules: newRulesJson });
+    
+    try {
+      // Update rule blocks when JSON is edited manually
+      if (isRulesEditable) {
+        const parsedRules = JSON.parse(newRulesJson);
+        const uiRules = apiToUiRuleFormat(parsedRules);
+        const newBlocks = [];
+        
+        // Convert JSON rules to rule blocks
+        Object.entries(uiRules).forEach(([field, conditions]) => {
+          Object.entries(conditions).forEach(([operator, value]) => {
+            let uiOperator;
+            switch (operator) {
+              case '$gt': uiOperator = '>'; break;
+              case '$gte': uiOperator = '>='; break;
+              case '$lt': uiOperator = '<'; break;
+              case '$lte': uiOperator = '<='; break;
+              default: return;
+            }
+            
+            const formattedValue = ['lastOrderDate', 'createdAt'].includes(field) 
+              ? formatDate(value) 
+              : value;
+              
+            newBlocks.push({
+              field,
+              operator: uiOperator,
+              value: formattedValue
+            });
+          });
+        });
+        
+        setRuleBlocks(newBlocks);
+      }
+    } catch (err) {
+      // Silently fail - we'll validate on actions that require valid JSON
+    }
+  };
+
+  // Converts visual rule blocks to JSON format
+  const convertToRuleObject = (blocks) => {
+    const uiRule = {};
+  
+    blocks.forEach(({ field, operator, value }) => {
+      if (!uiRule[field]) uiRule[field] = {};
+      
+      let parsedValue = value;
+      
+      // Parse values according to their type
+      if (['totalSpend', 'totalOrders'].includes(field)) {
+        parsedValue = Number(value);
+      } else if (['lastOrderDate', 'createdAt'].includes(field)) {
+        parsedValue = formatDate(value);
+      }
+      
+      // Map operators to MongoDB syntax
+      switch (operator) {
+        case '>': uiRule[field]['$gt'] = parsedValue; break;
+        case '>=': uiRule[field]['$gte'] = parsedValue; break;
+        case '<': uiRule[field]['$lt'] = parsedValue; break;
+        case '<=': uiRule[field]['$lte'] = parsedValue; break;
+      }
+    });
+    
+    // Convert to API format before returning
+    return uiToApiRuleFormat(uiRule);
+  };
+
+  // Updates rule blocks and JSON when a block is modified
+  const updateRuleBlocks = (updatedBlocks) => {
+    setRuleBlocks(updatedBlocks);
+    const ruleObject = convertToRuleObject(updatedBlocks);
+    setForm(prev => ({ ...prev, segmentRules: JSON.stringify(ruleObject, null, 2) }));
+  };
+
+  // Filter users based on rules consistently across fields
+  const filterUsersByRules = (users, ruleObject) => {
+    const uiRules = apiToUiRuleFormat(ruleObject);
+    
+    return users.filter((user) => {
+      let match = true;
+      
+      // Helper function to apply conditions
+      const applyCondition = (fieldName, userValue, conditions) => {
+        if (!conditions) return true;
+        
+        if (conditions.$gt !== undefined) {
+          if (['lastOrderDate', 'createdAt'].includes(fieldName)) {
+            if (!(new Date(userValue) > new Date(conditions.$gt))) return false;
+          } else {
+            if (!(userValue > conditions.$gt)) return false;
+          }
+        }
+        
+        if (conditions.$gte !== undefined) {
+          if (['lastOrderDate', 'createdAt'].includes(fieldName)) {
+            if (!(new Date(userValue) >= new Date(conditions.$gte))) return false;
+          } else {
+            if (!(userValue >= conditions.$gte)) return false;
+          }
+        }
+        
+        if (conditions.$lt !== undefined) {
+          if (['lastOrderDate', 'createdAt'].includes(fieldName)) {
+            if (!(new Date(userValue) < new Date(conditions.$lt))) return false;
+          } else {
+            if (!(userValue < conditions.$lt)) return false;
+          }
+        }
+        
+        if (conditions.$lte !== undefined) {
+          if (['lastOrderDate', 'createdAt'].includes(fieldName)) {
+            if (!(new Date(userValue) <= new Date(conditions.$lte))) return false;
+          } else {
+            if (!(userValue <= conditions.$lte)) return false;
+          }
+        }
+        
+        return true;
+      };
+      
+      // Check totalSpend conditions
+      if (uiRules.totalSpend) {
+        match = match && applyCondition('totalSpend', user.totalSpend, uiRules.totalSpend);
+      }
+      
+      // Check totalOrders conditions
+      if (uiRules.totalOrders) {
+        match = match && applyCondition('totalOrders', user.totalOrders, uiRules.totalOrders);
+      }
+      
+      // Check lastOrderDate conditions
+      if (uiRules.lastOrderDate) {
+        match = match && applyCondition('lastOrderDate', user.lastOrderDate, uiRules.lastOrderDate);
+      }
+      
+      // Check createdAt conditions
+      if (uiRules.createdAt) {
+        match = match && applyCondition('createdAt', user.createdAt, uiRules.createdAt);
+      }
+      
+      return match;
+    });
+  };
+
+  // Previews audience based on current segment rules
+  const handlePreview = async () => {
+    if (!form.segmentRules.trim()) {
+      toast.warning('Please define segment rules first');
+      return;
+    }
+    
+    setLoading(prev => ({ ...prev, preview: true }));
+    try {
+      const rawRule = JSON.parse(form.segmentRules);
+      const res = await axios.get('/customers');
+      
+      const filteredUsers = filterUsersByRules(res.data, rawRule);
+      setMatchedUsers(filteredUsers);
+      
+      toast.success(`Found ${filteredUsers.length} matching customers`);
+    } catch (err) {
+      console.error('Preview error:', err);
+      toast.error('Invalid segment rules. Please check your JSON syntax.');
+    } finally {
+      setLoading(prev => ({ ...prev, preview: false }));
+    }
+  };
+
+  // Creates and submits the campaign
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate form
+    if (!form.name.trim() || !form.message.trim() || !form.segmentRules.trim()) {
+      toast.warning('Please fill in all required fields');
+      return;
+    }
+    
+    setLoading(prev => ({ ...prev, submit: true }));
+    try {
+      // Parse and validate JSON
+      const rawRule = JSON.parse(form.segmentRules);
+      
+      const res = await axios.post('/campaigns', {
+        name: form.name,
+        message: form.message,
+        segmentRules: rawRule, // Already in API format
+        createdBy: 'admin@example.com',
+      });
+
+      const { campaign, customers } = res.data;
+
+      await axios.post('/logs/simulate', {
+        campaignId: campaign._id,
+        baseMessage: form.message,
+        customers,
+      });
+
+      toast.success('Campaign created and delivery simulated!');
+      setForm({ name: '', message: '', segmentRules: '' });
+      setMatchedUsers([]);
+      setRuleBlocks([]);
+      navigate('/campaign-history');
+    } catch (err) {
+      console.error('Submit error:', err);
+      toast.error('Error creating campaign. Please check your inputs and try again.');
+    } finally {
+      setLoading(prev => ({ ...prev, submit: false }));
+    }
+  };
+
+  // AI-powered audience rules generation from natural language
+  const handlePromptBlur = async (e) => {
+    const prompt = e.target.value.trim();
+    if (!prompt) return;
+    
+    setLoading(prev => ({ ...prev, ai: true }));
+    try {
+      const res = await axios.post('/ai/segment', { prompt });
+      
+      if (res.data) {
+        setForm(prev => ({ ...prev, segmentRules: JSON.stringify(res.data, null, 2) }));
+        
+        // Update rule blocks to match AI-generated rules
+        try {
+          const uiRules = apiToUiRuleFormat(res.data);
+          const newBlocks = [];
+          
+          Object.entries(uiRules).forEach(([field, conditions]) => {
+            Object.entries(conditions).forEach(([operator, value]) => {
+              let uiOperator;
+              switch (operator) {
+                case '$gt': uiOperator = '>'; break;
+                case '$gte': uiOperator = '>='; break;
+                case '$lt': uiOperator = '<'; break;
+                case '$lte': uiOperator = '<='; break;
+                default: return;
+              }
+              
+              const formattedValue = ['lastOrderDate', 'createdAt'].includes(field) 
+                ? formatDate(value) 
+                : value;
+                
+              newBlocks.push({
+                field,
+                operator: uiOperator,
+                value: formattedValue
+              });
+            });
+          });
+          
+          setRuleBlocks(newBlocks);
+        } catch (parseErr) {
+          console.error('Error parsing AI rules:', parseErr);
+        }
+        
+        toast.info('AI generated segment rules based on your description');
+      }
+    } catch (err) {
+      console.error('AI error:', err);
+      toast.error('AI failed to parse your prompt. Try being more specific.');
+    } finally {
+      setLoading(prev => ({ ...prev, ai: false }));
+    }
+  };
+
+  // AI-powered message generation from campaign name
+  const generateMessageFromName = async () => {
+    if (!form.name) {
+      toast.warning('Please enter a campaign name first.');
+      return;
+    }
+
+    setLoading(prev => ({ ...prev, ai: true }));
+    try {
+      const res = await axios.post('/ai/messages', {
+        context: `Generate promotional message for campaign: ${form.name}`,
+      });
+      
+      if (res.data && res.data.messages) {
+        const suggestions = res.data.messages.split('\n').filter(Boolean);
+        if (suggestions.length > 0) {
+          setForm(prev => ({ ...prev, message: suggestions[0] }));
+          toast.success('AI-generated message applied');
+        } else {
+          toast.warning('AI generated empty message. Please try again.');
+        }
+      }
+    } catch (err) {
+      console.error('Message generation error:', err);
+      toast.error('Error generating campaign message');
+    } finally {
+      setLoading(prev => ({ ...prev, ai: false }));
+    }
+  };
+
+  // Toggle rules JSON editability
+  const toggleRulesEditable = () => {
+    setIsRulesEditable(!isRulesEditable);
+    toast.info(isRulesEditable ? 'Segment rules locked' : 'Segment rules unlocked for editing');
+  };
+
+  // Rule block component for better reusability
+  const RuleBlock = ({ block, index, onChange, onRemove }) => (
+    <div className="flex gap-2 items-center">
+      <select
+        value={block.field}
+        onChange={(e) => onChange(index, 'field', e.target.value)}
+        className="p-2 border rounded"
+      >
+        <option value="totalSpend">Total Spend</option>
+        <option value="totalOrders">Total Orders</option>
+        <option value="lastOrderDate">Last Order Date</option>
+        <option value="createdAt">Signup Date</option>
+      </select>
+
+      <select
+        value={block.operator}
+        onChange={(e) => onChange(index, 'operator', e.target.value)}
+        className="p-2 border rounded"
+      >
+        <option value=">">&gt;</option>
+        <option value=">=">&ge;</option>
+        <option value="<">&lt;</option>
+        <option value="<=">&le;</option>
+      </select>
+
+      <input
+        type={['lastOrderDate', 'createdAt'].includes(block.field) ? 'date' : 'number'}
+        value={block.value}
+        onChange={(e) => onChange(index, 'value', e.target.value)}
+        placeholder="Value"
+        className="p-2 border rounded w-40"
+        min={['totalSpend', 'totalOrders'].includes(block.field) ? 0 : undefined}
+      />
+
+      <button
+        type="button"
+        onClick={() => onRemove(index)}
+        className="text-red-500 text-sm"
+        aria-label="Remove rule"
+      >
+        ✖
+      </button>
+    </div>
+  );
+
+  // Handle rule block changes
+  const handleRuleBlockChange = (index, field, value) => {
+    const updated = [...ruleBlocks];
+    updated[index][field] = value;
+    updateRuleBlocks(updated);
+  };
+
+  // Add new rule block
+  const addRuleBlock = () => {
+    const updated = [...ruleBlocks, { field: 'totalSpend', operator: '>', value: 1000 }];
+    updateRuleBlocks(updated);
+  };
+
+  // Remove rule block at index
+  const removeRuleBlock = (index) => {
+    const updated = ruleBlocks.filter((_, i) => i !== index);
+    updateRuleBlocks(updated);
+  };
+
+  // Initialize rule blocks from JSON when component mounts or rules change
+  useEffect(() => {
+    if (!isRulesEditable && form.segmentRules.trim()) {
+      try {
+        const parsedRules = JSON.parse(form.segmentRules);
+        const uiRules = apiToUiRuleFormat(parsedRules);
+        const newBlocks = [];
+        
+        Object.entries(uiRules).forEach(([field, conditions]) => {
+          Object.entries(conditions).forEach(([operator, value]) => {
+            let uiOperator;
+            switch (operator) {
+              case '$gt': uiOperator = '>'; break;
+              case '$gte': uiOperator = '>='; break;
+              case '$lt': uiOperator = '<'; break;
+              case '$lte': uiOperator = '<='; break;
+              default: return;
+            }
+            
+            const formattedValue = ['lastOrderDate', 'createdAt'].includes(field) 
+              ? formatDate(value) 
+              : value;
+              
+            newBlocks.push({
+              field,
+              operator: uiOperator,
+              value: formattedValue
+            });
+          });
+        });
+        
+        setRuleBlocks(newBlocks);
+      } catch (err) {
+        // Silently fail if JSON parsing fails
+      }
+    }
+  }, [isRulesEditable]);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="max-w-4xl mx-auto py-8 px-4">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Create New Campaign</h1>
+
+        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+          <div className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Campaign Name Section */}
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Campaign Name
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="name"
+                    type="text"
+                    name="name"
+                    placeholder="Enter a descriptive name"
+                    value={form.name}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={generateMessageFromName}
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200 whitespace-nowrap"
+                    disabled={loading.ai}
+                  >
+                    {loading.ai ? (
+                      <span className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-purple-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Generating
+                      </span>
+                    ) : (
+                      <>
+                        <span className="mr-1">✨</span> Generate Message
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Campaign Message Section */}
+              <div>
+                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                  Campaign Message
+                </label>
+                <textarea
+                  id="message"
+                  name="message"
+                  placeholder="Enter your promotional message"
+                  rows={3}
+                  value={form.message}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  required
+                />
+              </div>
+
+              {/* Audience Targeting Section */}
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Target Audience
+                </label>
+
+                {/* Visual Rule Builder */}
+                <div className="space-y-3">
+                  {ruleBlocks.length > 0 ? (
+                    ruleBlocks.map((block, index) => (
+                      <RuleBlock
+                        key={index}
+                        block={block}
+                        index={index}
+                        onChange={handleRuleBlockChange}
+                        onRemove={removeRuleBlock}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-sm text-gray-500 italic">
+                      No rules defined. Add a rule or use the AI-powered description below.
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={addRuleBlock}
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center"
+                  >
+                    <span className="mr-1">+</span> Add Rule
+                  </button>
+                </div>
+
+                {/* AI-Powered Audience Description */}
+                <div className="space-y-2 mt-4">
+                  <label className="flex items-center text-sm font-medium text-gray-700">
+                    <span className="mr-2">Describe Your Target Audience</span>
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800">AI Powered</span>
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      placeholder="Example: Customers who spent more than 5000 rupees or made at least 3 orders"
+                      rows={2}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      onBlur={handlePromptBlur}
+                    />
+                    {loading.ai && (
+                      <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center">
+                        <div className="flex items-center space-x-2">
+                          <svg className="animate-spin h-5 w-5 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span className="text-sm font-medium text-purple-700">Generating rules...</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Describe your target audience in plain English, and AI will convert it to segment rules.
+                    Your description will be processed when you click outside the text box.
+                  </p>
+                </div>
+
+                {/* Raw JSON Rules Editor */}
+                <div className="mt-2">
+                  <div className="flex justify-between mb-1">
+                    <label htmlFor="segmentRules" className="block text-xs text-gray-500">
+                      Segment Rules (JSON)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={toggleRulesEditable}
+                      className="text-xs text-indigo-600 hover:text-indigo-800"
+                    >
+                      {isRulesEditable ? 'Lock Rules' : 'Edit Rules'}
+                    </button>
+                  </div>
+                  <textarea
+                    id="segmentRules"
+                    name="segmentRules"
+                    rows={4}
+                    value={form.segmentRules}
+                    onChange={handleRulesChange}
+                    className={`w-full p-2 border border-gray-300 rounded-md font-mono text-sm ${
+                      !isRulesEditable ? 'bg-gray-50' : 'bg-white'
+                    }`}
+                    readOnly={!isRulesEditable}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 pt-2">
+                <button
+                  type="button"
+                  onClick={handlePreview}
+                  className="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-yellow-900 bg-yellow-100 hover:bg-yellow-200 flex items-center justify-center"
+                  disabled={loading.preview}
+                >
+                  {loading.preview ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Previewing...
+                    </>
+                  ) : (
+                    'Preview Audience'
+                  )}
+                </button>
+
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center"
+                  disabled={loading.submit}
+                >
+                  {loading.submit ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Creating...
+                    </>
+                  ) : (
+                    'Launch Campaign'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* Audience Preview Table */}
+        {matchedUsers.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-800">
+                Preview Audience
+              </h3>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {matchedUsers.length} customers
+              </span>
+            </div>
+            
+            <div className="overflow-y-auto max-h-64">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Spend</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Orders</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Order</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Signup Date</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {matchedUsers.map((user) => (
+                    <tr key={user._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{user.totalSpend.toLocaleString()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.totalOrders}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {user.lastOrderDate ? new Date(user.lastOrderDate).toLocaleDateString() : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Campaigns;

@@ -12,7 +12,7 @@ const Campaigns = () => {
   });
 
   const [matchedUsers, setMatchedUsers] = useState([]);
-  const [loading, setLoading] = useState({ preview: false, submit: false, ai: false });
+  const [loading, setLoading] = useState({});
   const [isRulesEditable, setIsRulesEditable] = useState(false);
   const [ruleBlocks, setRuleBlocks] = useState([]);
   const navigate = useNavigate();
@@ -26,7 +26,6 @@ const Campaigns = () => {
   const apiToUiRuleFormat = (apiRule) => {
     const uiRule = {};
     
-    // Convert backend field names to frontend field names
     if (apiRule.spent !== undefined) uiRule.totalSpend = apiRule.spent;
     if (apiRule.orders !== undefined) uiRule.totalOrders = apiRule.orders;
     if (apiRule.lastOrderDate !== undefined) uiRule.lastOrderDate = apiRule.lastOrderDate;
@@ -34,6 +33,7 @@ const Campaigns = () => {
     
     return uiRule;
   };
+
   const uiToApiRuleFormat = (uiRule) => {
     const apiRule = {};
     if (uiRule.totalSpend !== undefined) apiRule.spent = uiRule.totalSpend;
@@ -47,6 +47,7 @@ const Campaigns = () => {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
   const handleRulesChange = (e) => {
     const newRulesJson = e.target.value;
     setForm({ ...form, segmentRules: newRulesJson });
@@ -54,38 +55,43 @@ const Campaigns = () => {
     try {
       if (isRulesEditable) {
         const parsedRules = JSON.parse(newRulesJson);
-        const uiRules = apiToUiRuleFormat(parsedRules);
-        const newBlocks = [];
-        
-        Object.entries(uiRules).forEach(([field, conditions]) => {
-          Object.entries(conditions).forEach(([operator, value]) => {
-            let uiOperator;
-            switch (operator) {
-              case '$gt': uiOperator = '>'; break;
-              case '$gte': uiOperator = '>='; break;
-              case '$lt': uiOperator = '<'; break;
-              case '$lte': uiOperator = '<='; break;
-              default: return;
-            }
-            
-            const formattedValue = ['lastOrderDate', 'createdAt'].includes(field) 
-              ? formatDate(value) 
-              : value;
-              
-            newBlocks.push({
-              field,
-              operator: uiOperator,
-              value: formattedValue
-            });
-          });
-        });
-        
-        setRuleBlocks(newBlocks);
+        updateRuleBlocksFromApiRule(parsedRules);
       }
     } catch (err) {
       toast.error('Invalid JSON format. Please check your input.',err);
     }
   };
+
+  const updateRuleBlocksFromApiRule = (apiRule) => {
+    const uiRules = apiToUiRuleFormat(apiRule);
+    const newBlocks = [];
+    
+    Object.entries(uiRules).forEach(([field, conditions]) => {
+      Object.entries(conditions).forEach(([operator, value]) => {
+        let uiOperator;
+        switch (operator) {
+          case '$gt': uiOperator = '>'; break;
+          case '$gte': uiOperator = '>='; break;
+          case '$lt': uiOperator = '<'; break;
+          case '$lte': uiOperator = '<='; break;
+          default: return;
+        }
+        
+        const formattedValue = ['lastOrderDate', 'createdAt'].includes(field) 
+          ? formatDate(value) 
+          : value;
+          
+        newBlocks.push({
+          field,
+          operator: uiOperator,
+          value: formattedValue
+        });
+      });
+    });
+    
+    setRuleBlocks(newBlocks);
+  };
+
   const convertToRuleObject = (blocks) => {
     const uiRule = {};
   
@@ -107,11 +113,13 @@ const Campaigns = () => {
     });
     return uiToApiRuleFormat(uiRule);
   };
+
   const updateRuleBlocks = (updatedBlocks) => {
     setRuleBlocks(updatedBlocks);
     const ruleObject = convertToRuleObject(updatedBlocks);
     setForm(prev => ({ ...prev, segmentRules: JSON.stringify(ruleObject, null, 2) }));
   };
+
   const filterUsersByRules = (users, ruleObject) => {
     const uiRules = apiToUiRuleFormat(ruleObject);
     
@@ -169,6 +177,7 @@ const Campaigns = () => {
       return match;
     });
   };
+
   const handlePreview = async () => {
     if (!form.segmentRules.trim()) {
       toast.warning('Please define segment rules first');
@@ -192,7 +201,6 @@ const Campaigns = () => {
     }
   };
 
-  // Creates and submits the campaign
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || !form.message.trim() || !form.segmentRules.trim()) {
@@ -230,6 +238,7 @@ const Campaigns = () => {
       setLoading(prev => ({ ...prev, submit: false }));
     }
   };
+
   const handlePromptBlur = async (e) => {
     const prompt = e.target.value.trim();
     if (!prompt) return;
@@ -240,37 +249,7 @@ const Campaigns = () => {
       
       if (res.data) {
         setForm(prev => ({ ...prev, segmentRules: JSON.stringify(res.data, null, 2) }));
-        try {
-          const uiRules = apiToUiRuleFormat(res.data);
-          const newBlocks = [];
-          
-          Object.entries(uiRules).forEach(([field, conditions]) => {
-            Object.entries(conditions).forEach(([operator, value]) => {
-              let uiOperator;
-              switch (operator) {
-                case '$gt': uiOperator = '>'; break;
-                case '$gte': uiOperator = '>='; break;
-                case '$lt': uiOperator = '<'; break;
-                case '$lte': uiOperator = '<='; break;
-                default: return;
-              }
-              const formattedValue = ['lastOrderDate', 'createdAt'].includes(field) 
-                ? formatDate(value) 
-                : value;
-                
-              newBlocks.push({
-                field,
-                operator: uiOperator,
-                value: formattedValue
-              });
-            });
-          });
-          
-          setRuleBlocks(newBlocks);
-        } catch (parseErr) {
-          console.error('Error parsing AI rules:', parseErr);
-        }
-        
+        updateRuleBlocksFromApiRule(res.data);
         toast.info('AI generated segment rules based on your description');
       }
     } catch (err) {
@@ -280,6 +259,7 @@ const Campaigns = () => {
       setLoading(prev => ({ ...prev, ai: false }));
     }
   };
+
   const generateMessageFromName = async () => {
     if (!form.name) {
       toast.warning('Please enter a campaign name first.');
@@ -308,10 +288,12 @@ const Campaigns = () => {
       setLoading(prev => ({ ...prev, ai: false }));
     }
   };
+
   const toggleRulesEditable = () => {
     setIsRulesEditable(!isRulesEditable);
     toast.info(isRulesEditable ? 'Segment rules locked' : 'Segment rules unlocked for editing');
   };
+
   const RuleBlock = ({ block, index, onChange, onRemove }) => (
     <div className="flex gap-2 items-center">
       <select
@@ -355,55 +337,41 @@ const Campaigns = () => {
       </button>
     </div>
   );
+
   const handleRuleBlockChange = (index, field, value) => {
     const updated = [...ruleBlocks];
     updated[index][field] = value;
     updateRuleBlocks(updated);
   };
+
   const addRuleBlock = () => {
     const updated = [...ruleBlocks, { field: 'totalSpend', operator: '>', value: 1000 }];
     updateRuleBlocks(updated);
   };
+
   const removeRuleBlock = (index) => {
     const updated = ruleBlocks.filter((_, i) => i !== index);
     updateRuleBlocks(updated);
   };
+
   useEffect(() => {
     if (!isRulesEditable && form.segmentRules.trim()) {
       try {
         const parsedRules = JSON.parse(form.segmentRules);
-        const uiRules = apiToUiRuleFormat(parsedRules);
-        const newBlocks = [];
-        
-        Object.entries(uiRules).forEach(([field, conditions]) => {
-          Object.entries(conditions).forEach(([operator, value]) => {
-            let uiOperator;
-            switch (operator) {
-              case '$gt': uiOperator = '>'; break;
-              case '$gte': uiOperator = '>='; break;
-              case '$lt': uiOperator = '<'; break;
-              case '$lte': uiOperator = '<='; break;
-              default: return;
-            }
-            
-            const formattedValue = ['lastOrderDate', 'createdAt'].includes(field) 
-              ? formatDate(value) 
-              : value;
-              
-            newBlocks.push({
-              field,
-              operator: uiOperator,
-              value: formattedValue
-            });
-          });
-        });
-        
-        setRuleBlocks(newBlocks);
+        updateRuleBlocksFromApiRule(parsedRules);
       } catch (err) {
-        toast.error('Invalid JSON format. Please check your input.', err);
+        toast.error('Invalid JSON format. Please check your input.',err);
       }
     }
   }, [isRulesEditable]);
+
+  // Loader component
+  const Loader = ({ text = "Loading..." }) => (
+    <div className="flex items-center">
+      <div className="w-4 h-4 mr-2 border-t-2 border-b-2 border-indigo-500 rounded-full animate-spin"></div>
+      {text}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -435,15 +403,7 @@ const Campaigns = () => {
                     className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200 whitespace-nowrap"
                     disabled={loading.ai}
                   >
-                    {loading.ai ? (
-                      <span className="flex items-center">
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-purple-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Generating
-                      </span>
-                    ) : (
+                    {loading.ai ? <Loader text="Generating" /> : (
                       <>
                         <span className="mr-1">✨</span> Generate Message
                       </>
@@ -498,7 +458,7 @@ const Campaigns = () => {
                 <div className="space-y-2 mt-4">
                   <label className="flex items-center text-sm font-medium text-gray-700">
                     <span className="mr-2">Describe Your Target Audience</span>
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800">AI Powered</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">AI Powered</span>
                   </label>
                   <div className="relative">
                     <textarea
@@ -509,13 +469,7 @@ const Campaigns = () => {
                     />
                     {loading.ai && (
                       <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center">
-                        <div className="flex items-center space-x-2">
-                          <svg className="animate-spin h-5 w-5 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          <span className="text-sm font-medium text-purple-700">Generating rules...</span>
-                        </div>
+                        <Loader text="Generating rules..." />
                       </div>
                     )}
                   </div>
@@ -558,34 +512,14 @@ const Campaigns = () => {
                   className="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-yellow-900 bg-yellow-100 hover:bg-yellow-200 flex items-center justify-center"
                   disabled={loading.preview}
                 >
-                  {loading.preview ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Previewing...
-                    </>
-                  ) : (
-                    'Preview Audience'
-                  )}
+                  {loading.preview ? <Loader text="Previewing..." /> : 'Preview Audience'}
                 </button>
                 <button
                   type="submit"
                   className="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center"
                   disabled={loading.submit}
                 >
-                  {loading.submit ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Creating...
-                    </>
-                  ) : (
-                    'Launch Campaign'
-                  )}
+                  {loading.submit ? <Loader text="Creating..." /> : 'Launch Campaign'}
                 </button>
               </div>
             </form>
@@ -635,4 +569,5 @@ const Campaigns = () => {
     </div>
   );
 };
+
 export default Campaigns;

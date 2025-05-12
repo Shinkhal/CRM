@@ -21,8 +21,6 @@ const CampaignLogs = () => {
     try {
       const res = await axios.get(`/logs/${id}`);
       setLogs(res.data);
-      
-      // Calculate statistics
       const stats = res.data.reduce((acc, log) => {
         acc.total++;
         if (log.status === 'SENT') acc.sent++;
@@ -144,8 +142,6 @@ const CampaignLogs = () => {
             Detailed message delivery information and status
           </p>
         </div>
-
-        {/* Stats cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center">
@@ -160,7 +156,6 @@ const CampaignLogs = () => {
               </div>
             </div>
           </div>
-          
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0 bg-green-100 rounded-full p-3">
@@ -173,8 +168,7 @@ const CampaignLogs = () => {
                 <div className="text-2xl font-semibold text-gray-900">{statistics.sent}</div>
               </div>
             </div>
-          </div>
-          
+          </div> 
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0 bg-red-100 rounded-full p-3">
@@ -188,7 +182,6 @@ const CampaignLogs = () => {
               </div>
             </div>
           </div>
-          
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0 bg-yellow-100 rounded-full p-3">
@@ -203,7 +196,6 @@ const CampaignLogs = () => {
             </div>
           </div>
         </div>
-        
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
             <h2 className="text-lg font-medium text-gray-800">Message Logs</h2>

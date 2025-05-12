@@ -8,7 +8,6 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Check if user is logged in
   useEffect(() => {
     const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
@@ -25,14 +24,12 @@ const Navbar = () => {
       toast.error('Failed to log out. Please try again.');
     }
   };
-
-  // Check if a link is active
   const isActive = (path) => {
     return location.pathname === path;
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+    <nav className="bg-white border-b border-gray-400 shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo and brand name */}
@@ -44,8 +41,6 @@ const Navbar = () => {
               <span className="ml-2 text-xl font-bold text-gray-900">Mini CRM</span>
             </Link>
           </div>
-          
-          {/* Navigation - Desktop */}
           {isLoggedIn && (
             <div className="hidden md:flex md:items-center md:space-x-1">
               <Link 
@@ -96,8 +91,6 @@ const Navbar = () => {
               </button>
             </div>
           )}
-          
-          {/* Mobile menu button */}
           {isLoggedIn && (
             <div className="md:hidden flex items-center">
               <button
@@ -106,13 +99,11 @@ const Navbar = () => {
                 aria-expanded="false"
               >
                 <span className="sr-only">Open main menu</span>
-                {/* Menu icon when closed */}
                 {!isMenuOpen ? (
                   <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                 ) : (
-                  // X icon when open
                   <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -123,7 +114,6 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile menu, show/hide based on menu state */}
       {isLoggedIn && isMenuOpen && (
         <div className="md:hidden">
           <div className="pt-2 pb-3 space-y-1 px-2">

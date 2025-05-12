@@ -8,7 +8,20 @@ export const simulateCampaignDelivery = async (req, res) => {
     const logs = [];
 
     for (const customer of customers) {
-      const messageText = `Hi ${customer.name}, ${baseMessage}`;
+      const messageText = `
+      Hi ${customer.name},
+      We're excited to share something special with you!
+      ${baseMessage}
+
+      Don't miss out — act now and be part of the change.
+          
+      Thank you for being a valued part of our community.
+          
+      Best regards,  
+      The Campaign Team  
+      Your Company Name
+      `;
+
 
       const result = await sendEmail(customer.email, 'Campaign Message', messageText);
 

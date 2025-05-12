@@ -17,14 +17,12 @@ const Campaigns = () => {
   const [ruleBlocks, setRuleBlocks] = useState([]);
   const navigate = useNavigate();
 
-  // Format dates consistently throughout the application
   const formatDate = (date) => {
     if (!date) return null;
     const d = new Date(date);
     return d instanceof Date && !isNaN(d) ? d.toISOString().split('T')[0] : null;
   };
 
-  // Convert API format to UI format for rule consistency
   const apiToUiRuleFormat = (apiRule) => {
     const uiRule = {};
     
@@ -36,12 +34,8 @@ const Campaigns = () => {
     
     return uiRule;
   };
-
-  // Convert UI format to API format for rule consistency
   const uiToApiRuleFormat = (uiRule) => {
     const apiRule = {};
-    
-    // Convert frontend field names to backend field names
     if (uiRule.totalSpend !== undefined) apiRule.spent = uiRule.totalSpend;
     if (uiRule.totalOrders !== undefined) apiRule.orders = uiRule.totalOrders;
     if (uiRule.lastOrderDate !== undefined) apiRule.lastOrderDate = uiRule.lastOrderDate;
@@ -50,24 +44,19 @@ const Campaigns = () => {
     return apiRule;
   };
 
-  // Handles form field changes
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
-
-  // Handle rules JSON direct editing
   const handleRulesChange = (e) => {
     const newRulesJson = e.target.value;
     setForm({ ...form, segmentRules: newRulesJson });
     
     try {
-      // Update rule blocks when JSON is edited manually
       if (isRulesEditable) {
         const parsedRules = JSON.parse(newRulesJson);
         const uiRules = apiToUiRuleFormat(parsedRules);
         const newBlocks = [];
         
-        // Convert JSON rules to rule blocks
         Object.entries(uiRules).forEach(([field, conditions]) => {
           Object.entries(conditions).forEach(([operator, value]) => {
             let uiOperator;
@@ -94,11 +83,9 @@ const Campaigns = () => {
         setRuleBlocks(newBlocks);
       }
     } catch (err) {
-      // Silently fail - we'll validate on actions that require valid JSON
+      toast.error('Invalid JSON format. Please check your input.',err);
     }
   };
-
-  // Converts visual rule blocks to JSON format
   const convertToRuleObject = (blocks) => {
     const uiRule = {};
   
@@ -106,15 +93,11 @@ const Campaigns = () => {
       if (!uiRule[field]) uiRule[field] = {};
       
       let parsedValue = value;
-      
-      // Parse values according to their type
       if (['totalSpend', 'totalOrders'].includes(field)) {
         parsedValue = Number(value);
       } else if (['lastOrderDate', 'createdAt'].includes(field)) {
         parsedValue = formatDate(value);
       }
-      
-      // Map operators to MongoDB syntax
       switch (operator) {
         case '>': uiRule[field]['$gt'] = parsedValue; break;
         case '>=': uiRule[field]['$gte'] = parsedValue; break;
@@ -122,29 +105,20 @@ const Campaigns = () => {
         case '<=': uiRule[field]['$lte'] = parsedValue; break;
       }
     });
-    
-    // Convert to API format before returning
     return uiToApiRuleFormat(uiRule);
   };
-
-  // Updates rule blocks and JSON when a block is modified
   const updateRuleBlocks = (updatedBlocks) => {
     setRuleBlocks(updatedBlocks);
     const ruleObject = convertToRuleObject(updatedBlocks);
     setForm(prev => ({ ...prev, segmentRules: JSON.stringify(ruleObject, null, 2) }));
   };
-
-  // Filter users based on rules consistently across fields
   const filterUsersByRules = (users, ruleObject) => {
     const uiRules = apiToUiRuleFormat(ruleObject);
     
     return users.filter((user) => {
       let match = true;
-      
-      // Helper function to apply conditions
       const applyCondition = (fieldName, userValue, conditions) => {
         if (!conditions) return true;
-        
         if (conditions.$gt !== undefined) {
           if (['lastOrderDate', 'createdAt'].includes(fieldName)) {
             if (!(new Date(userValue) > new Date(conditions.$gt))) return false;
@@ -180,31 +154,21 @@ const Campaigns = () => {
         return true;
       };
       
-      // Check totalSpend conditions
       if (uiRules.totalSpend) {
         match = match && applyCondition('totalSpend', user.totalSpend, uiRules.totalSpend);
       }
-      
-      // Check totalOrders conditions
       if (uiRules.totalOrders) {
         match = match && applyCondition('totalOrders', user.totalOrders, uiRules.totalOrders);
       }
-      
-      // Check lastOrderDate conditions
       if (uiRules.lastOrderDate) {
         match = match && applyCondition('lastOrderDate', user.lastOrderDate, uiRules.lastOrderDate);
       }
-      
-      // Check createdAt conditions
       if (uiRules.createdAt) {
         match = match && applyCondition('createdAt', user.createdAt, uiRules.createdAt);
       }
-      
       return match;
     });
   };
-
-  // Previews audience based on current segment rules
   const handlePreview = async () => {
     if (!form.segmentRules.trim()) {
       toast.warning('Please define segment rules first');
@@ -231,8 +195,6 @@ const Campaigns = () => {
   // Creates and submits the campaign
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate form
     if (!form.name.trim() || !form.message.trim() || !form.segmentRules.trim()) {
       toast.warning('Please fill in all required fields');
       return;
@@ -240,16 +202,14 @@ const Campaigns = () => {
     
     setLoading(prev => ({ ...prev, submit: true }));
     try {
-      // Parse and validate JSON
       const rawRule = JSON.parse(form.segmentRules);
       
       const res = await axios.post('/campaigns', {
         name: form.name,
         message: form.message,
-        segmentRules: rawRule, // Already in API format
+        segmentRules: rawRule,
         createdBy: 'admin@example.com',
       });
-
       const { campaign, customers } = res.data;
 
       await axios.post('/logs/simulate', {
@@ -270,8 +230,6 @@ const Campaigns = () => {
       setLoading(prev => ({ ...prev, submit: false }));
     }
   };
-
-  // AI-powered audience rules generation from natural language
   const handlePromptBlur = async (e) => {
     const prompt = e.target.value.trim();
     if (!prompt) return;
@@ -282,8 +240,6 @@ const Campaigns = () => {
       
       if (res.data) {
         setForm(prev => ({ ...prev, segmentRules: JSON.stringify(res.data, null, 2) }));
-        
-        // Update rule blocks to match AI-generated rules
         try {
           const uiRules = apiToUiRuleFormat(res.data);
           const newBlocks = [];
@@ -298,7 +254,6 @@ const Campaigns = () => {
                 case '$lte': uiOperator = '<='; break;
                 default: return;
               }
-              
               const formattedValue = ['lastOrderDate', 'createdAt'].includes(field) 
                 ? formatDate(value) 
                 : value;
@@ -325,8 +280,6 @@ const Campaigns = () => {
       setLoading(prev => ({ ...prev, ai: false }));
     }
   };
-
-  // AI-powered message generation from campaign name
   const generateMessageFromName = async () => {
     if (!form.name) {
       toast.warning('Please enter a campaign name first.');
@@ -355,14 +308,10 @@ const Campaigns = () => {
       setLoading(prev => ({ ...prev, ai: false }));
     }
   };
-
-  // Toggle rules JSON editability
   const toggleRulesEditable = () => {
     setIsRulesEditable(!isRulesEditable);
     toast.info(isRulesEditable ? 'Segment rules locked' : 'Segment rules unlocked for editing');
   };
-
-  // Rule block component for better reusability
   const RuleBlock = ({ block, index, onChange, onRemove }) => (
     <div className="flex gap-2 items-center">
       <select
@@ -406,27 +355,19 @@ const Campaigns = () => {
       </button>
     </div>
   );
-
-  // Handle rule block changes
   const handleRuleBlockChange = (index, field, value) => {
     const updated = [...ruleBlocks];
     updated[index][field] = value;
     updateRuleBlocks(updated);
   };
-
-  // Add new rule block
   const addRuleBlock = () => {
     const updated = [...ruleBlocks, { field: 'totalSpend', operator: '>', value: 1000 }];
     updateRuleBlocks(updated);
   };
-
-  // Remove rule block at index
   const removeRuleBlock = (index) => {
     const updated = ruleBlocks.filter((_, i) => i !== index);
     updateRuleBlocks(updated);
   };
-
-  // Initialize rule blocks from JSON when component mounts or rules change
   useEffect(() => {
     if (!isRulesEditable && form.segmentRules.trim()) {
       try {
@@ -459,7 +400,7 @@ const Campaigns = () => {
         
         setRuleBlocks(newBlocks);
       } catch (err) {
-        // Silently fail if JSON parsing fails
+        toast.error('Invalid JSON format. Please check your input.', err);
       }
     }
   }, [isRulesEditable]);
@@ -473,7 +414,6 @@ const Campaigns = () => {
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
           <div className="p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Campaign Name Section */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                   Campaign Name
@@ -511,8 +451,6 @@ const Campaigns = () => {
                   </button>
                 </div>
               </div>
-
-              {/* Campaign Message Section */}
               <div>
                 <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
                   Campaign Message
@@ -528,14 +466,10 @@ const Campaigns = () => {
                   required
                 />
               </div>
-
-              {/* Audience Targeting Section */}
               <div className="space-y-4">
                 <label className="block text-sm font-medium text-gray-700">
                   Target Audience
                 </label>
-
-                {/* Visual Rule Builder */}
                 <div className="space-y-3">
                   {ruleBlocks.length > 0 ? (
                     ruleBlocks.map((block, index) => (
@@ -561,8 +495,6 @@ const Campaigns = () => {
                     <span className="mr-1">+</span> Add Rule
                   </button>
                 </div>
-
-                {/* AI-Powered Audience Description */}
                 <div className="space-y-2 mt-4">
                   <label className="flex items-center text-sm font-medium text-gray-700">
                     <span className="mr-2">Describe Your Target Audience</span>
@@ -592,8 +524,6 @@ const Campaigns = () => {
                     Your description will be processed when you click outside the text box.
                   </p>
                 </div>
-
-                {/* Raw JSON Rules Editor */}
                 <div className="mt-2">
                   <div className="flex justify-between mb-1">
                     <label htmlFor="segmentRules" className="block text-xs text-gray-500">
@@ -621,8 +551,6 @@ const Campaigns = () => {
                   />
                 </div>
               </div>
-
-              {/* Action Buttons */}
               <div className="flex gap-4 pt-2">
                 <button
                   type="button"
@@ -642,7 +570,6 @@ const Campaigns = () => {
                     'Preview Audience'
                   )}
                 </button>
-
                 <button
                   type="submit"
                   className="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center"
@@ -664,8 +591,6 @@ const Campaigns = () => {
             </form>
           </div>
         </div>
-
-        {/* Audience Preview Table */}
         {matchedUsers.length > 0 && (
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -676,7 +601,6 @@ const Campaigns = () => {
                 {matchedUsers.length} customers
               </span>
             </div>
-            
             <div className="overflow-y-auto max-h-64">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -711,5 +635,4 @@ const Campaigns = () => {
     </div>
   );
 };
-
 export default Campaigns;

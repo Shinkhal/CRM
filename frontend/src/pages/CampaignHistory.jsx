@@ -19,21 +19,16 @@ const CampaignHistory = () => {
     try {
       const res = await axios.get('/campaigns/stats');
       setCampaigns(res.data);
-      
-      // Calculate overall statistics
       const stats = res.data.reduce((acc, campaign) => {
         acc.totalCampaigns++;
         acc.totalMessages += (campaign.sent + campaign.failed) || 0;
         acc.totalAudience += campaign.audienceSize || 0;
         return acc;
       }, { totalCampaigns: 0, totalMessages: 0, totalAudience: 0 });
-      
-      // Calculate overall success rate
       if (stats.totalMessages > 0) {
         const totalSent = res.data.reduce((sum, campaign) => sum + (campaign.sent || 0), 0);
         stats.successRate = Math.round((totalSent / stats.totalMessages) * 100);
       }
-      
       setStatistics(stats);
     } catch (err) {
       toast.error('Failed to fetch campaigns. Please try again.');

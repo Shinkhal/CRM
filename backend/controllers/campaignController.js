@@ -2,9 +2,6 @@ import { Campaign } from '../models/Campaign.js';
 import { Customer } from '../models/Customer.js';
 import { CommunicationLog } from '../models/CommunicationLog.js';
 
-/**
- * Helper function to build query filters for numeric or date fields
- */
 const buildQueryCondition = (rule, type = 'number') => {
   const validOps = ['$gt', '$gte', '$lt', '$lte', '$eq'];
   const query = {};
@@ -89,8 +86,6 @@ export const getCampaigns = async (req, res) => {
 export const getCampaignStats = async (req, res) => {
   try {
     const campaigns = await Campaign.find().sort({ createdAt: -1 });
-
-    // Fetch all logs in one query for efficiency
     const campaignIds = campaigns.map(c => c._id);
     const logs = await CommunicationLog.find({ campaignId: { $in: campaignIds } });
 

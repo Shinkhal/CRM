@@ -2,9 +2,9 @@ import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
 const Landing = () => {
-
+    const uri = import.meta.env.VITE_BACKEND_URL;
     const handleGoogleLogin = () => {
-        window.location.href = 'http://localhost:5000/auth/google';
+        window.location.href = `${uri}/auth/google`;
       };
 
   return (

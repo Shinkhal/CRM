@@ -1,3 +1,7 @@
+![Node.js](https://img.shields.io/badge/Node.js-339933?logo=node.js&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-4ea94b?logo=mongodb&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-Deployed-black?logo=vercel)
+
 # 🧠 Mini CRM
 
 A full-stack CRM platform designed to empower marketing teams with smart campaign management and customer insights.
@@ -12,6 +16,12 @@ Key functionalities include:
 Built with **Node.js**, **React (Vite)**, **MongoDB**, **Tailwind CSS**, and **Google Gemini AI**.
 
 ---
+
+## ScreenShots
+![image](https://github.com/user-attachments/assets/f0335666-55d8-45ec-ad39-97aa57293e5a)
+![image](https://github.com/user-attachments/assets/1d5fa81b-f312-4131-b788-ddb15a5a45e9)
+![image](https://github.com/user-attachments/assets/71710727-a45b-4690-be5e-9a436d2cbb7a)
+
 
 ## 🚀 Core Features
 

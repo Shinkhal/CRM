@@ -1,16 +1,72 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import axios from '../api/axios';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
+import { getUserIdFromToken } from '../utils/getUser';
+
+// Move RuleBlock component outside to prevent re-renders
+const RuleBlock = ({ block, index, onChange, onRemove }) => (
+  <div className="flex gap-2 items-center">
+    <select
+      value={block.field}
+      onChange={(e) => onChange(index, 'field', e.target.value)}
+      className="p-2 border rounded"
+    >
+      <option value="totalSpend">Total Spend</option>
+      <option value="totalOrders">Total Orders</option>
+      <option value="lastOrderDate">Last Order Date</option>
+      <option value="createdAt">Signup Date</option>
+    </select>
+
+    <select
+      value={block.operator}
+      onChange={(e) => onChange(index, 'operator', e.target.value)}
+      className="p-2 border rounded"
+    >
+      <option value=">">&gt;</option>
+      <option value=">=">&ge;</option>
+      <option value="<">&lt;</option>
+      <option value="<=">&le;</option>
+    </select>
+
+    <input
+      type={['lastOrderDate', 'createdAt'].includes(block.field) ? 'date' : 'number'}
+      value={block.value}
+      onChange={(e) => onChange(index, 'value', e.target.value)}
+      placeholder="Value"
+      className="p-2 border rounded w-40"
+      min={['totalSpend', 'totalOrders'].includes(block.field) ? 0 : undefined}
+    />
+
+    <button
+      type="button"
+      onClick={() => onRemove(index)}
+      className="text-red-500 text-sm"
+      aria-label="Remove rule"
+    >
+      ✖
+    </button>
+  </div>
+);
+
+// Move Loader component outside
+const Loader = ({ text = "Loading..." }) => (
+  <div className="flex items-center">
+    <div className="w-4 h-4 mr-2 border-t-2 border-b-2 border-indigo-500 rounded-full animate-spin"></div>
+    {text}
+  </div>
+);
 
 const Campaigns = () => {
   const [form, setForm] = useState({
     name: '',
     message: '',
     segmentRules: '',
+    userId: ''
   });
 
+  const [user, setUser] = useState(null);
   const [matchedUsers, setMatchedUsers] = useState([]);
   const [loading, setLoading] = useState({});
   const [isRulesEditable, setIsRulesEditable] = useState(false);
@@ -53,16 +109,17 @@ const Campaigns = () => {
     setForm({ ...form, segmentRules: newRulesJson });
     
     try {
-      if (isRulesEditable) {
+      if (isRulesEditable && newRulesJson.trim()) {
         const parsedRules = JSON.parse(newRulesJson);
         updateRuleBlocksFromApiRule(parsedRules);
       }
     } catch (err) {
-      toast.error('Invalid JSON format. Please check your input.',err);
+      console.error('Invalid JSON format:', err);
+      toast.error('Invalid JSON format. Please check your input.');
     }
   };
 
-  const updateRuleBlocksFromApiRule = (apiRule) => {
+  const updateRuleBlocksFromApiRule = useCallback((apiRule) => {
     const uiRules = apiToUiRuleFormat(apiRule);
     const newBlocks = [];
     
@@ -90,7 +147,7 @@ const Campaigns = () => {
     });
     
     setRuleBlocks(newBlocks);
-  };
+  }, []);
 
   const convertToRuleObject = (blocks) => {
     const uiRule = {};
@@ -207,16 +264,26 @@ const Campaigns = () => {
       toast.warning('Please fill in all required fields');
       return;
     }
+
+    if (!user) {
+      toast.error('User not authenticated');
+      return;
+    }
     
     setLoading(prev => ({ ...prev, submit: true }));
     try {
       const rawRule = JSON.parse(form.segmentRules);
-      
+      const token = localStorage.getItem('token');
       const res = await axios.post('/campaigns', {
         name: form.name,
         message: form.message,
         segmentRules: rawRule,
         createdBy: 'admin@example.com',
+        userId: user,
+
+        Headers:{
+          'Authorization': `Bearer ${token}`
+        }
       });
       const { campaign, customers } = res.data;
 
@@ -224,10 +291,11 @@ const Campaigns = () => {
         campaignId: campaign._id,
         baseMessage: form.message,
         customers,
+        userId : user
       });
 
       toast.success('Campaign created and delivery simulated!');
-      setForm({ name: '', message: '', segmentRules: '' });
+      setForm({ name: '', message: '', segmentRules: '', userId: user });
       setMatchedUsers([]);
       setRuleBlocks([]);
       navigate('/campaign-history');
@@ -294,50 +362,6 @@ const Campaigns = () => {
     toast.info(isRulesEditable ? 'Segment rules locked' : 'Segment rules unlocked for editing');
   };
 
-  const RuleBlock = ({ block, index, onChange, onRemove }) => (
-    <div className="flex gap-2 items-center">
-      <select
-        value={block.field}
-        onChange={(e) => onChange(index, 'field', e.target.value)}
-        className="p-2 border rounded"
-      >
-        <option value="totalSpend">Total Spend</option>
-        <option value="totalOrders">Total Orders</option>
-        <option value="lastOrderDate">Last Order Date</option>
-        <option value="createdAt">Signup Date</option>
-      </select>
-
-      <select
-        value={block.operator}
-        onChange={(e) => onChange(index, 'operator', e.target.value)}
-        className="p-2 border rounded"
-      >
-        <option value=">">&gt;</option>
-        <option value=">=">&ge;</option>
-        <option value="<">&lt;</option>
-        <option value="<=">&le;</option>
-      </select>
-
-      <input
-        type={['lastOrderDate', 'createdAt'].includes(block.field) ? 'date' : 'number'}
-        value={block.value}
-        onChange={(e) => onChange(index, 'value', e.target.value)}
-        placeholder="Value"
-        className="p-2 border rounded w-40"
-        min={['totalSpend', 'totalOrders'].includes(block.field) ? 0 : undefined}
-      />
-
-      <button
-        type="button"
-        onClick={() => onRemove(index)}
-        className="text-red-500 text-sm"
-        aria-label="Remove rule"
-      >
-        ✖
-      </button>
-    </div>
-  );
-
   const handleRuleBlockChange = (index, field, value) => {
     const updated = [...ruleBlocks];
     updated[index][field] = value;
@@ -354,24 +378,35 @@ const Campaigns = () => {
     updateRuleBlocks(updated);
   };
 
+  // Initialize user from token
   useEffect(() => {
-    if (!isRulesEditable && form.segmentRules.trim()) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('No authentication token found');
+      return;
+    }
+
+    const id = getUserIdFromToken(token);
+    if (id) {
+      setUser(id);
+      setForm(prev => ({ ...prev, userId: id }));
+    } else {
+      toast.error('Invalid authentication token');
+    }
+  }, []);
+
+  // Update rule blocks when rules change or when editable state changes
+  useEffect(() => {
+    if (user && !isRulesEditable && form.segmentRules.trim()) {
       try {
         const parsedRules = JSON.parse(form.segmentRules);
         updateRuleBlocksFromApiRule(parsedRules);
       } catch (err) {
-        toast.error('Invalid JSON format. Please check your input.',err);
+        console.error('Invalid JSON format:', err);
+        toast.error('Invalid JSON format. Please check your input.');
       }
     }
-  }, [isRulesEditable]);
-
-  // Loader component
-  const Loader = ({ text = "Loading..." }) => (
-    <div className="flex items-center">
-      <div className="w-4 h-4 mr-2 border-t-2 border-b-2 border-indigo-500 rounded-full animate-spin"></div>
-      {text}
-    </div>
-  );
+  }, [user, isRulesEditable, form.segmentRules, updateRuleBlocksFromApiRule]);
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -1,35 +1,59 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import axios from '../api/axios';
 import Navbar from '../components/Navbar';
 import { toast } from 'react-toastify';
+import { getUserIdFromToken } from '../utils/getUser';
 
 const Customers = () => {
+  const [user, setUser] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     name: '',
     email: '',
     phone: '',
+    userId: '' // Initialize as empty string
   });
 
-  const fetchCustomers = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get('/customers');
-      setCustomers(res.data);
-    } catch (error) {
-      console.error('Error fetching customers:', error);
-      toast.error('Failed to load customers. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchCustomers = useCallback(async () => {
+  setLoading(true);
+  try {
+    const token = localStorage.getItem('token'); // or get from context/auth provider
+    const res = await axios.get('/customers', {
+      headers: {
+        Authorization: `Bearer ${token}`, // send the token
+      },
+    });
+    setCustomers(res.data);
+  } catch (error) {
+    console.error('Error fetching customers:', error);
+    toast.error('Failed to load customers. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast.error('User not authenticated');
+      return;
+    }
+
     try {
-      await axios.post('/customers', form);
-      setForm({ name: '', email: '', phone: '' });
+      const formData = { ...form, userId: user };
+      await axios.post('/customers', formData);
+      
+      // Reset form with current user ID
+      setForm({ 
+        name: '', 
+        email: '', 
+        phone: '', 
+        userId: user 
+      });
+      
       toast.success('Customer added successfully!');
       fetchCustomers();
     } catch (error) {
@@ -44,8 +68,28 @@ const Customers = () => {
   };
 
   useEffect(() => {
-    fetchCustomers();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('No authentication token found');
+      return;
+    }
+
+    const id = getUserIdFromToken(token);
+    if (id) {
+      setUser(id);
+      // Update form with user ID
+      setForm(prev => ({ ...prev, userId: id }));
+    } else {
+      toast.error('Invalid authentication token');
+    }
   }, []);
+
+  // Fetch customers after user is set
+  useEffect(() => {
+    if (user) {
+      fetchCustomers();
+    }
+  }, [user, fetchCustomers]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -97,7 +141,8 @@ const Customers = () => {
             <div className="flex justify-end">
               <button
                 type="submit"
-                className="bg-indigo-600 text-white py-3 px-6 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors shadow-md"
+                disabled={!user}
+                className="bg-indigo-600 text-white py-3 px-6 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 Add Customer
               </button>

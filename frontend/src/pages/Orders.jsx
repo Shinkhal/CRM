@@ -2,19 +2,27 @@ import { useEffect, useState } from 'react';
 import axios from '../api/axios';
 import Navbar from '../components/Navbar';
 import { toast } from 'react-toastify';
+import { getUserIdFromToken } from '../utils/getUser';
 
 const Orders = () => {
+  const[user, setUser]=useState(null);
   const [customers, setCustomers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     customerId: '',
     amount: '',
+    userId : ''
   });
 
   const fetchCustomers = async () => {
     try {
-      const res = await axios.get('/customers');
+      const token = localStorage.getItem('token');
+      const res = await axios.get('/customers',{
+        headers: {
+          Authorization: `Bearer ${token}`
+          },
+      });
       setCustomers(res.data);
     } catch (err) {
       console.error('Error fetching customers:', err);
@@ -25,7 +33,12 @@ const Orders = () => {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/orders');
+      const token = localStorage.getItem('token');
+      const res = await axios.get('/orders',{
+        headers: {
+          Authorization: `Bearer ${token}`
+          },
+      });
       setOrders(res.data);
     } catch (err) {
       console.error('Error fetching orders:', err);
@@ -69,10 +82,30 @@ const Orders = () => {
     });
   };
 
+    useEffect(() => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('No authentication token found');
+        return;
+      }
+  
+      const id = getUserIdFromToken(token);
+      if (id) {
+        setUser(id);
+        // Update form with user ID
+        setForm(prev => ({ ...prev, userId: id }));
+      } else {
+        toast.error('Invalid authentication token');
+      }
+    }, []);
+
   useEffect(() => {
-    fetchCustomers();
-    fetchOrders();
-  }, []);
+    if(user){
+
+      fetchCustomers();
+      fetchOrders();
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-gray-50">

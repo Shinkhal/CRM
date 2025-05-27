@@ -3,7 +3,7 @@ import { CommunicationLog } from '../models/CommunicationLog.js';
 
 export const simulateCampaignDelivery = async (req, res) => {
   try {
-    const { campaignId, customers, baseMessage } = req.body;
+    const { campaignId, customers, baseMessage,userId } = req.body;
 
     const logs = [];
 
@@ -28,6 +28,7 @@ export const simulateCampaignDelivery = async (req, res) => {
       const log = new CommunicationLog({
         campaignId,
         customerId: customer._id,
+        userId: userId,
         message: messageText,
         status: result.success ? 'SENT' : 'FAILED',
         vendorResponse: result.success

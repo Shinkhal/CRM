@@ -1,5 +1,4 @@
-import mongoose from 'mongoose';
-
+import mongoose from "mongoose";
 const communicationLogSchema = new mongoose.Schema(
   {
     campaignId: { type: mongoose.Schema.Types.ObjectId, ref: 'Campaign', required: true },
@@ -7,6 +6,7 @@ const communicationLogSchema = new mongoose.Schema(
     message: { type: String },
     status: { type: String, enum: ['SENT', 'FAILED'], default: 'SENT' },
     vendorResponse: { type: String },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }
 );

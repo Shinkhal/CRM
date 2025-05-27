@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const customerSchema = new mongoose.Schema(
   {
@@ -9,6 +9,7 @@ const customerSchema = new mongoose.Schema(
     totalOrders: { type: Number, default: 0 },
     lastOrderDate: { type: Date },
     createdAt: { type: Date, default: Date.now },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }
 );

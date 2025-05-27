@@ -28,13 +28,15 @@ const buildQueryCondition = (rule, type = 'number') => {
 
 export const createCampaign = async (req, res) => {
   try {
-    const { name, segmentRules, createdBy, message } = req.body;
+    const { name, segmentRules, message } = req.body;
+    const userId = req.user.id; // <-- Authenticated user
 
-    if (!name || !segmentRules || !createdBy || !message) {
+    if (!name || !segmentRules || !message) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const query = {};
+    const query = { userId }; // Only fetch user's customers
+
     try {
       if (segmentRules.totalSpend) {
         query.totalSpend = buildQueryCondition(segmentRules.totalSpend, 'number');
@@ -58,8 +60,8 @@ export const createCampaign = async (req, res) => {
       name,
       segmentRules,
       audienceSize: customers.length,
-      createdBy,
-      message,
+      createdBy: req.user.name,
+      userId,
     });
 
     await campaign.save();
@@ -76,7 +78,7 @@ export const createCampaign = async (req, res) => {
 
 export const getCampaigns = async (req, res) => {
   try {
-    const campaigns = await Campaign.find().sort({ createdAt: -1 });
+    const campaigns = await Campaign.find({ userId: req.user.id }).sort({ createdAt: -1 });
     res.json(campaigns);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -85,9 +87,14 @@ export const getCampaigns = async (req, res) => {
 
 export const getCampaignStats = async (req, res) => {
   try {
-    const campaigns = await Campaign.find().sort({ createdAt: -1 });
+    const userId = req.user.id;
+
+    const campaigns = await Campaign.find({ userId }).sort({ createdAt: -1 });
     const campaignIds = campaigns.map(c => c._id);
-    const logs = await CommunicationLog.find({ campaignId: { $in: campaignIds } });
+    const logs = await CommunicationLog.find({
+      campaignId: { $in: campaignIds },
+      userId,
+    });
 
     const logMap = {};
     for (const log of logs) {

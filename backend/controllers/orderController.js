@@ -3,8 +3,8 @@
 
   export const createOrder = async (req, res) => {
     try {
-      const { customerId, amount } = req.body;
-      const order = new Order({ customerId, amount });
+      const { customerId, amount, userId } = req.body;
+      const order = new Order({ customerId, amount, userId});
       await order.save();
 
       const customer = await Customer.findById(customerId);
@@ -23,7 +23,7 @@
 
   export const getOrders = async (req, res) => {
     try {
-      const orders = await Order.find().populate('customerId', 'name email');
+      const orders = await Order.find({userId: req.user.id}).populate('customerId', 'name email');
       res.json(orders);
     } catch (error) {
       res.status(500).json({ error: error.message });

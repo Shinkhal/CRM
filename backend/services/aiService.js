@@ -8,24 +8,24 @@ const ai = new GoogleGenAI({
 
 export const generateSegmentQuery = async (prompt) => {
   const today = new Date().toISOString().split('T')[0]; 
-const fullPrompt = `Convert the following customer segmentation criteria into a valid MongoDB filter object.
-ONLY return a raw, valid JSON object with no explanation or formatting.
-DO NOT use code blocks or markdown.
-DO NOT use JavaScript functions like new Date().
-Use ISO date strings for Date comparisons (e.g., "YYYY-MM-DD").
-Today's date is ${today}.
-
-Only use these fields:
-- totalSpend (Number)
-- totalOrders (Number)
-- lastOrderDate (Date)
-- createdAt (Date)
-
-Do NOT include any other fields such as name, email, phone, dates, etc.
-
-Criteria:
-${prompt}
-`.trim();
+  const fullPrompt = `Convert the following customer segmentation criteria into a valid MongoDB filter object.
+  ONLY return a raw, valid JSON object with no explanation or formatting.
+  DO NOT use code blocks or markdown.
+  DO NOT use JavaScript functions like new Date().
+  Use ISO date strings for Date comparisons (e.g., "YYYY-MM-DD").
+  Today's date is ${today}.
+  
+  Only use these fields:
+  - totalSpend (Number)
+  - totalOrders (Number)
+  - lastOrderDate (Date)
+  - createdAt (Date)
+  
+  Do NOT include any other fields such as name, email, phone, dates, etc.
+  
+  Criteria:
+  ${prompt}
+  `.trim();
 
   const response = await ai.models.generateContent({
     model: "gemini-1.5-flash-8b",

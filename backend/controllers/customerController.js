@@ -12,9 +12,10 @@ export const createCustomer = async (req, res) => {
 
 export const getCustomers = async (req, res) => {
   try {
-    const customers = await Customer.find();
+    const customers = await Customer.find({ userId: req.user.id });
     res.json(customers);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+

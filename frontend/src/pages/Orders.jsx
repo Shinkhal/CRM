@@ -3,46 +3,37 @@ import axios from '../api/axios';
 import Navbar from '../components/Navbar';
 import { toast } from 'react-toastify';
 import { getUserIdFromToken } from '../utils/getUser';
+import { useAuth } from '../context/AuthContext';
 
 const Orders = () => {
-  const[user, setUser]=useState(null);
+  const { accessToken } = useAuth();
+  const [user, setUser] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     customerId: '',
     amount: '',
-    userId : ''
+    userId: ''
   });
 
-  const fetchCustomers = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('/customers',{
-        headers: {
-          Authorization: `Bearer ${token}`
-          },
-      });
-      setCustomers(res.data);
-    } catch (err) {
-      console.error('Error fetching customers:', err);
-      toast.error('Failed to load customers. Please try again.');
-    }
-  };
-
-  const fetchOrders = async () => {
+  // Fetch both customers and orders using Promise.all
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('/orders',{
-        headers: {
-          Authorization: `Bearer ${token}`
-          },
-      });
-      setOrders(res.data);
-    } catch (err) {
-      console.error('Error fetching orders:', err);
-      toast.error('Failed to load orders. Please try again.');
+      const [customerRes, orderRes] = await Promise.all([
+        axios.get('/customers', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }),
+        axios.get('/orders', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }),
+      ]);
+      setCustomers(customerRes.data);
+      setOrders(orderRes.data);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Failed to load data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -51,10 +42,12 @@ const Orders = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/orders', form);
-      setForm({ customerId: '', amount: '' });
+      await axios.post('/orders', form, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      setForm({ customerId: '', amount: '', userId: user });
       toast.success('Order created successfully!');
-      fetchOrders();
+      fetchData();
     } catch (err) {
       console.error('Error creating order:', err);
       toast.error('Failed to create order. Please try again.');
@@ -82,30 +75,19 @@ const Orders = () => {
     });
   };
 
-    useEffect(() => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error('No authentication token found');
-        return;
-      }
-  
-      const id = getUserIdFromToken(token);
-      if (id) {
-        setUser(id);
-        // Update form with user ID
-        setForm(prev => ({ ...prev, userId: id }));
-      } else {
-        toast.error('Invalid authentication token');
-      }
-    }, []);
-
   useEffect(() => {
-    if(user){
-
-      fetchCustomers();
-      fetchOrders();
+    const id = getUserIdFromToken(accessToken);
+    if (id) {
+      setUser(id);
+      setForm(prev => ({ ...prev, userId: id }));
+    } else {
+      toast.error('Invalid authentication token');
     }
-  }, [user]);
+
+    if(user){
+      fetchData();
+    }
+  }, [accessToken,user]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -113,7 +95,7 @@ const Orders = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Order Management</h1>
-        
+
         <div className="bg-white shadow-sm rounded-lg p-8 mb-10 border border-gray-100">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6">Create New Order</h2>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -172,7 +154,7 @@ const Orders = () => {
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-semibold text-gray-800">Recent Orders</h3>
             <button
-              onClick={fetchOrders}
+              onClick={fetchData}
               className="text-indigo-600 hover:text-indigo-800 flex items-center focus:outline-none"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -188,7 +170,6 @@ const Orders = () => {
             </div>
           ) : orders.length === 0 ? (
             <div className="text-center py-12 bg-gray-50 rounded-md">
-              
               <p className="mt-2 text-gray-500">No orders yet. Create your first order above.</p>
             </div>
           ) : (
@@ -214,7 +195,6 @@ const Orders = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">{formatDate(order.createdAt)}</div>
                       </td>
-                      
                     </tr>
                   ))}
                 </tbody>

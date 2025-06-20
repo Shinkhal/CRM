@@ -3,8 +3,10 @@ import axios from '../api/axios';
 import Navbar from '../components/Navbar';
 import { toast } from 'react-toastify';
 import { getUserIdFromToken } from '../utils/getUser';
+import { useAuth } from '../context/AuthContext';
 
 const Customers = () => {
+  const { accessToken } = useAuth(); 
   const [user, setUser] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,10 +20,9 @@ const Customers = () => {
   const fetchCustomers = useCallback(async () => {
   setLoading(true);
   try {
-    const token = localStorage.getItem('token'); // or get from context/auth provider
     const res = await axios.get('/customers', {
       headers: {
-        Authorization: `Bearer ${token}`, // send the token
+        Authorization: `Bearer ${accessToken}`, // send the token
       },
     });
     setCustomers(res.data);
@@ -31,7 +32,7 @@ const Customers = () => {
   } finally {
     setLoading(false);
   }
-}, []);
+}, [accessToken]);
 
 
   const handleSubmit = async (e) => {
@@ -67,14 +68,9 @@ const Customers = () => {
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
+  // Fetch customers after user is set
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast.error('No authentication token found');
-      return;
-    }
-
-    const id = getUserIdFromToken(token);
+    const id = getUserIdFromToken(accessToken);
     if (id) {
       setUser(id);
       // Update form with user ID
@@ -82,14 +78,10 @@ const Customers = () => {
     } else {
       toast.error('Invalid authentication token');
     }
-  }, []);
-
-  // Fetch customers after user is set
-  useEffect(() => {
     if (user) {
       fetchCustomers();
     }
-  }, [user, fetchCustomers]);
+  }, [user, fetchCustomers, accessToken]);
 
   return (
     <div className="min-h-screen bg-gray-50">

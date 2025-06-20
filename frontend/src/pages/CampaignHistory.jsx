@@ -3,10 +3,13 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from '../api/axios';
 import Navbar from '../components/Navbar';
+import { BarChart3, TrendingUp, Users, MessageSquare, Calendar, Eye, RefreshCw, Plus, Filter, Search, Zap, Target, Activity } from 'lucide-react';
 
 const CampaignHistory = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterBy, setFilterBy] = useState('all');
   const [statistics, setStatistics] = useState({
     totalCampaigns: 0,
     totalMessages: 0,
@@ -43,10 +46,17 @@ const CampaignHistory = () => {
   }, []);
 
   const getStatusColor = (successRate) => {
-    if (successRate >= 90) return 'bg-green-500';
-    if (successRate >= 70) return 'bg-blue-500';
-    if (successRate >= 50) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (successRate >= 90) return 'from-emerald-500 to-green-600';
+    if (successRate >= 70) return 'from-blue-500 to-indigo-600';
+    if (successRate >= 50) return 'from-amber-500 to-orange-600';
+    return 'from-red-500 to-rose-600';
+  };
+
+  const getStatusRing = (successRate) => {
+    if (successRate >= 90) return 'ring-emerald-500/20';
+    if (successRate >= 70) return 'ring-blue-500/20';
+    if (successRate >= 50) return 'ring-amber-500/20';
+    return 'ring-red-500/20';
   };
 
   const formatDate = (dateString) => {
@@ -64,173 +74,208 @@ const CampaignHistory = () => {
     });
   };
 
+  const filteredCampaigns = campaigns.filter(campaign => {
+    const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase());
+    if (filterBy === 'all') return matchesSearch;
+    if (filterBy === 'high') return matchesSearch && (campaign.successRate || 0) >= 90;
+    if (filterBy === 'medium') return matchesSearch && (campaign.successRate || 0) >= 70 && (campaign.successRate || 0) < 90;
+    if (filterBy === 'low') return matchesSearch && (campaign.successRate || 0) < 70;
+    return matchesSearch;
+  });
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
       <Navbar />
       
-      <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Campaign History</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Overview of all your messaging campaigns
-            </p>
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                  
+
+        {/* Filters and Search */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search campaigns..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+            />
           </div>
-          <button 
-            onClick={fetchCampaigns}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-slate-500" />
+            <select
+              value={filterBy}
+              onChange={(e) => setFilterBy(e.target.value)}
+              className="px-4 py-3 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+            >
+              <option value="all">All Campaigns</option>
+              <option value="high">High Performance (90%+)</option>
+              <option value="medium">Medium Performance (70-89%)</option>
+              <option value="low">Needs Attention (&lt;70%)</option>
+            </select>
+          </div>
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-indigo-100 rounded-full p-3">
-                <svg className="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <div className="text-sm font-medium text-gray-500">Total Campaigns</div>
-                <div className="text-2xl font-semibold text-gray-900">{statistics.totalCampaigns}</div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-blue-100 rounded-full p-3">
-                <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <div className="text-sm font-medium text-gray-500">Total Messages</div>
-                <div className="text-2xl font-semibold text-gray-900">{statistics.totalMessages}</div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-green-100 rounded-full p-3">
-                <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <div className="text-sm font-medium text-gray-500">Success Rate</div>
-                <div className="text-2xl font-semibold text-gray-900">{statistics.successRate}%</div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-purple-100 rounded-full p-3">
-                <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <div className="text-sm font-medium text-gray-500">Total Audience</div>
-                <div className="text-2xl font-semibold text-gray-900">{statistics.totalAudience}</div>
-              </div>
-            </div>
-          </div>
-        </div>
+       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+  {[
+    {
+      label: 'Total Campaigns',
+      value: statistics.totalCampaigns,
+      icon: <BarChart3 className="h-5 w-5 text-violet-600" />,
+    },
+    {
+      label: 'Messages Sent',
+      value: statistics.totalMessages.toLocaleString(),
+      icon: <MessageSquare className="h-5 w-5 text-blue-600" />,
+    },
+    {
+      label: 'Success Rate',
+      value: `${statistics.successRate}%`,
+      icon: <TrendingUp className="h-5 w-5 text-emerald-600" />,
+    },
+    {
+      label: 'Total Reach',
+      value: statistics.totalAudience.toLocaleString(),
+      icon: <Users className="h-5 w-5 text-orange-600" />,
+    },
+  ].map((stat, idx) => (
+    <div
+      key={idx}
+      className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm"
+    >
+      <div>
+        <div className="text-sm text-gray-500">{stat.label}</div>
+        <div className="text-lg font-semibold text-gray-900">{stat.value}</div>
+      </div>
+      <div className="ml-3">{stat.icon}</div>
+    </div>
+  ))}
+</div>
+
+
+        
         
         {loading ? (
-          <div className="bg-white rounded-lg shadow-md flex justify-center items-center p-12">
-            <div className="animate-pulse flex space-x-4">
-              <div className="h-3 w-3 bg-blue-600 rounded-full"></div>
-              <div className="h-3 w-3 bg-blue-600 rounded-full"></div>
-              <div className="h-3 w-3 bg-blue-600 rounded-full"></div>
+          <div className="bg-white/60 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 flex justify-center items-center p-16">
+            <div className="flex space-x-2">
+              <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce"></div>
+              <div className="w-3 h-3 bg-indigo-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+              <div className="w-3 h-3 bg-purple-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
             </div>
           </div>
-        ) : campaigns.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md flex flex-col items-center justify-center p-12 text-center">
-            <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No campaigns found</h3>
-            <p className="text-gray-500 mb-4">Create a new campaign to get started</p>
-            <Link
-              to="/campaigns"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Create Campaign
-            </Link>
+        ) : filteredCampaigns.length === 0 ? (
+          <div className="bg-white/60 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 flex flex-col items-center justify-center p-16 text-center">
+            <div className="w-20 h-20 bg-gradient-to-r from-slate-100 to-slate-200 rounded-full flex items-center justify-center mb-6">
+              <Activity className="w-10 h-10 text-slate-400" />
+            </div>
+            <h3 className="text-2xl font-semibold text-slate-800 mb-2">No campaigns found</h3>
+            <p className="text-slate-500 mb-6 max-w-md">
+              {searchTerm || filterBy !== 'all' 
+                ? "Try adjusting your search or filter criteria" 
+                : "Create your first campaign to start engaging with your audience"
+              }
+            </p>
+            {!searchTerm && filterBy === 'all' && (
+              <Link
+                to="/campaigns"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200"
+              >
+                <Plus className="h-4 w-4" />
+                Create Your First Campaign
+              </Link>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {campaigns.map((campaign) => (
-              <div key={campaign._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900 truncate" title={campaign.name}>
-                      {campaign.name}
-                    </h3>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {campaign.audienceSize} recipients
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="px-6 py-4">
-                  <div className="mb-4">
-                    <div className="flex justify-between text-sm text-gray-500 mb-1">
-                      <span>Success Rate</span>
-                      <span>{campaign.successRate || 0}%</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredCampaigns.map((campaign) => (
+              <div key={campaign._id} className="group relative">
+                <div className={`absolute inset-0 bg-gradient-to-r ${getStatusColor(campaign.successRate || 0)} rounded-2xl blur opacity-10 group-hover:opacity-20 transition duration-300`}></div>
+                <div className={`relative bg-white/80 backdrop-blur-sm border border-white/20 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden ring-1 ${getStatusRing(campaign.successRate || 0)}`}>
+                  
+                  {/* Header */}
+                  <div className="p-6 border-b border-slate-100/50">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="text-xl font-bold text-slate-800 truncate flex-1 mr-3" title={campaign.name}>
+                        {campaign.name}
+                      </h3>
+                      <div className="flex items-center gap-1 px-3 py-1 bg-slate-100/80 rounded-full">
+                        <Users className="h-3 w-3 text-slate-500" />
+                        <span className="text-sm font-medium text-slate-600">{campaign.audienceSize?.toLocaleString()}</span>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-                      <div
-                        className={`h-2.5 rounded-full ${getStatusColor(campaign.successRate)}`}
-                        style={{ width: `${campaign.successRate || 0}%` }}
-                      />
+                    
+                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                      <Calendar className="h-4 w-4" />
+                      <span>{formatDate(campaign.createdAt)} at {formatTime(campaign.createdAt)}</span>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="bg-gray-50 p-3 rounded-md text-center">
-                      <div className="text-2xl font-bold text-green-600">{campaign.sent || 0}</div>
-                      <div className="text-xs text-gray-500 uppercase font-medium">Delivered</div>
-                    </div>
-                    <div className="bg-gray-50 p-3 rounded-md text-center">
-                      <div className="text-2xl font-bold text-red-600">{campaign.failed || 0}</div>
-                      <div className="text-xs text-gray-500 uppercase font-medium">Failed</div>
+                  {/* Performance Ring */}
+                  <div className="px-6 py-4 bg-slate-50/50">
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="relative w-24 h-24">
+                        <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            stroke="currentColor"
+                            strokeWidth="8"
+                            fill="transparent"
+                            className="text-slate-200"
+                          />
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            stroke="url(#gradient)"
+                            strokeWidth="8"
+                            fill="transparent"
+                            strokeDasharray={`${2 * Math.PI * 40}`}
+                            strokeDashoffset={`${2 * Math.PI * 40 * (1 - (campaign.successRate || 0) / 100)}`}
+                            className="transition-all duration-1000 ease-out"
+                            strokeLinecap="round"
+                          />
+                          <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="0%" className={`${(campaign.successRate || 0) >= 90 ? 'text-emerald-500' : (campaign.successRate || 0) >= 70 ? 'text-blue-500' : (campaign.successRate || 0) >= 50 ? 'text-amber-500' : 'text-red-500'}`} stopColor="currentColor" />
+                              <stop offset="100%" className={`${(campaign.successRate || 0) >= 90 ? 'text-green-600' : (campaign.successRate || 0) >= 70 ? 'text-indigo-600' : (campaign.successRate || 0) >= 50 ? 'text-orange-600' : 'text-rose-600'}`} stopColor="currentColor" />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-slate-800">{campaign.successRate || 0}%</div>
+                            <div className="text-xs text-slate-500 font-medium">Success</div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center text-sm text-gray-500 mb-4">
-                    <svg className="h-4 w-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span>{formatDate(campaign.createdAt)} at {formatTime(campaign.createdAt)}</span>
+                  {/* Stats Grid */}
+                  <div className="p-6 pt-2">
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div className="text-center p-3 bg-emerald-50/80 rounded-xl">
+                        <div className="text-2xl font-bold text-emerald-700">{(campaign.sent || 0).toLocaleString()}</div>
+                        <div className="text-xs text-emerald-600 font-medium uppercase tracking-wide">Delivered</div>
+                      </div>
+                      <div className="text-center p-3 bg-red-50/80 rounded-xl">
+                        <div className="text-2xl font-bold text-red-700">{(campaign.failed || 0).toLocaleString()}</div>
+                        <div className="text-xs text-red-600 font-medium uppercase tracking-wide">Failed</div>
+                      </div>
+                    </div>
+                    
+                    <Link
+                      to={`/campaign/${campaign._id}`}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl hover:from-slate-700 hover:to-slate-800 transition-all duration-200 group"
+                    >
+                      <Eye className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                      View Analytics
+                    </Link>
                   </div>
-                </div>
-                
-                <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between">
-                  <Link
-                    to={`/campaign/${campaign._id}`}
-                    className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-900"
-                  >
-                    <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    View Details
-                  </Link>
-                  
                 </div>
               </div>
             ))}
@@ -242,4 +287,3 @@ const CampaignHistory = () => {
 };
 
 export default CampaignHistory;
-

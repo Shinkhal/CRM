@@ -4,6 +4,7 @@ import axios from '../api/axios';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
 import { getUserIdFromToken } from '../utils/getUser';
+import { useAuth } from '../context/AuthContext';
 
 // Move RuleBlock component outside to prevent re-renders
 const RuleBlock = ({ block, index, onChange, onRemove }) => (
@@ -72,6 +73,7 @@ const Campaigns = () => {
   const [isRulesEditable, setIsRulesEditable] = useState(false);
   const [ruleBlocks, setRuleBlocks] = useState([]);
   const navigate = useNavigate();
+  const { accessToken } = useAuth();
 
   const formatDate = (date) => {
     if (!date) return null;
@@ -273,7 +275,6 @@ const Campaigns = () => {
     setLoading(prev => ({ ...prev, submit: true }));
     try {
       const rawRule = JSON.parse(form.segmentRules);
-      const token = localStorage.getItem('token');
       const res = await axios.post('/campaigns', {
         name: form.name,
         message: form.message,
@@ -282,7 +283,7 @@ const Campaigns = () => {
         userId: user,
 
         Headers:{
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${accessToken}`
         }
       });
       const { campaign, customers } = res.data;
@@ -380,20 +381,14 @@ const Campaigns = () => {
 
   // Initialize user from token
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast.error('No authentication token found');
-      return;
-    }
-
-    const id = getUserIdFromToken(token);
+    const id = getUserIdFromToken(accessToken);
     if (id) {
       setUser(id);
       setForm(prev => ({ ...prev, userId: id }));
     } else {
       toast.error('Invalid authentication token');
     }
-  }, []);
+  }, [accessToken]);
 
   // Update rule blocks when rules change or when editable state changes
   useEffect(() => {

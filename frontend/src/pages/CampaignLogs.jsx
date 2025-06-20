@@ -16,7 +16,10 @@ const CampaignLogs = () => {
     total: 0
   });
 
-  const fetchLogs = async () => {
+  
+
+  useEffect(() => {
+    const fetchLogs = async () => {
     setLoading(true);
     try {
       const res = await axios.get(`/logs/${id}`);
@@ -44,97 +47,49 @@ const CampaignLogs = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
     fetchLogs();
   }, [id]);
 
   const getStatusBadge = (status) => {
-    switch (status) {
-      case 'SENT':
-        return (
-          <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-            Delivered
-          </span>
-        );
-      case 'FAILED':
-        return (
-          <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-            Failed
-          </span>
-        );
-      case 'PENDING':
-        return (
-          <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-            Pending
-          </span>
-        );
-      default:
-        return (
-          <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-            {status}
-          </span>
-        );
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'SENT':
-        return (
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100">
-            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-        );
-      case 'FAILED':
-        return (
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100">
-            <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </div>
-        );
-      case 'PENDING':
-        return (
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100">
-            <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        );
-      default:
-        return (
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        );
-    }
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return {
-      date: date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      }),
-      time: date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+    const styles = {
+      SENT: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      FAILED: 'bg-red-50 text-red-700 border-red-200',
+      PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
+      default: 'bg-gray-50 text-gray-700 border-gray-200'
     };
+    
+    const labels = {
+      SENT: 'Delivered',
+      FAILED: 'Failed',
+      PENDING: 'Pending'
+    };
+
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${styles[status] || styles.default}`}>
+        {labels[status] || status}
+      </span>
+    );
   };
+
+  const StatCard = ({ title, value, color }) => (
+    <div className="bg-white rounded-xl border border-gray-100 p-6 hover:border-gray-200 transition-colors">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-2xl font-semibold text-gray-900 mt-1">{value}</p>
+        </div>
+        <div className={`h-2 w-2 rounded-full ${color}`}></div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
+      
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+                <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">
             {campaign ? campaign.name : 'Campaign'} Delivery Status
           </h1>
@@ -142,137 +97,108 @@ const CampaignLogs = () => {
             Detailed message delivery information and status
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-blue-100 rounded-full p-3">
-                <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <div className="text-sm font-medium text-gray-500">Total Messages</div>
-                <div className="text-2xl font-semibold text-gray-900">{statistics.total}</div>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-green-100 rounded-full p-3">
-                <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <div className="text-sm font-medium text-gray-500">Delivered</div>
-                <div className="text-2xl font-semibold text-gray-900">{statistics.sent}</div>
-              </div>
-            </div>
-          </div> 
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-red-100 rounded-full p-3">
-                <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <div className="text-sm font-medium text-gray-500">Failed</div>
-                <div className="text-2xl font-semibold text-gray-900">{statistics.failed}</div>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-yellow-100 rounded-full p-3">
-                <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <div className="text-sm font-medium text-gray-500">Pending</div>
-                <div className="text-2xl font-semibold text-gray-900">{statistics.pending}</div>
-              </div>
-            </div>
-          </div>
+
+        {/* Statistics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <StatCard 
+            title="Total Messages" 
+            value={statistics.total} 
+            color="bg-blue-500" 
+          />
+          <StatCard 
+            title="Delivered" 
+            value={statistics.sent} 
+            color="bg-emerald-500" 
+          />
+          <StatCard 
+            title="Failed" 
+            value={statistics.failed} 
+            color="bg-red-500" 
+          />
+          <StatCard 
+            title="Pending" 
+            value={statistics.pending} 
+            color="bg-amber-500" 
+          />
         </div>
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-800">Message Logs</h2>
-            <button 
-              onClick={fetchLogs}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Refresh
-            </button>
+
+        {/* Logs Table */}
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h2 className="text-lg font-semibold text-gray-900">Delivery Logs</h2>
           </div>
-          
+
           {loading ? (
-            <div className="flex justify-center items-center p-12">
-              <div className="animate-pulse flex space-x-4">
-                <div className="h-3 w-3 bg-blue-600 rounded-full"></div>
-                <div className="h-3 w-3 bg-blue-600 rounded-full"></div>
-                <div className="h-3 w-3 bg-blue-600 rounded-full"></div>
+            <div className="flex items-center justify-center py-12">
+              <div className="flex space-x-1">
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-pulse"></div>
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
               </div>
             </div>
           ) : logs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-12 text-center">
-              <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              <p className="text-gray-500 font-medium">No message logs found</p>
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <p className="text-gray-500 font-medium">No delivery logs found</p>
+              <p className="text-gray-400 text-sm mt-1">Messages will appear here once the campaign starts</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 p-6">
-              {logs.map((log) => {
-                const formattedDate = formatDate(log.createdAt);
-                return (
-                  <div key={log._id} className="bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                    <div className="p-4">
-                      <div className="flex items-start">
-                        {getStatusIcon(log.status)}
-                        <div className="ml-4 flex-1">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <h3 className="text-lg font-medium text-gray-900">
-                                {log.customerId?.name || 'Unknown Customer'}
-                              </h3>
-                              <div className="ml-2">
-                                {getStatusBadge(log.status)}
-                              </div>
-                            </div>
-                            <div className="text-right text-sm text-gray-500">
-                              <div>{formattedDate.date}</div>
-                              <div>{formattedDate.time}</div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Customer
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Phone
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Response
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {logs.map((log) => (
+                    <tr key={log._id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-8 w-8">
+                            <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                              <span className="text-sm font-medium text-gray-600">
+                                {(log.customerId?.name || 'U').charAt(0).toUpperCase()}
+                              </span>
                             </div>
                           </div>
-                          
-                          {log.customerId?.phone && (
-                            <div className="text-sm text-gray-500 mt-1">
-                              {log.customerId.phone}
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {log.customerId?.name || 'Unknown Customer'}
                             </div>
-                          )}
-                          
-                          <div className="mt-3 bg-gray-50 p-3 rounded-md">
-                            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Message</h4>
-                            <p className="text-sm text-gray-800">{log.message}</p>
-                          </div>
-                          
-                          <div className="mt-3">
-                            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Vendor Response</h4>
-                            <p className="text-sm text-gray-600 italic">
-                              {log.vendorResponse || 'No response data available'}
-                            </p>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {log.customerId?.phone || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(log.status)}
+                      </td>
+                      
+                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                        {log.vendorResponse || 'No response data'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

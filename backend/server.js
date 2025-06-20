@@ -12,13 +12,19 @@ import cookieParser from 'cookie-parser';
 import './config/passport.js';
 import authRoutes from './routes/authRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 dotenv.config();
 connectDB();
 
 const app = express();
 
-app.use(cors({ origin: '*', credentials: true }));
+app.use(cors({
+  origin: process.env.CLIENT_URL,
+  credentials: true, // allow cookies to be sent
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 app.get('/', (req, res) => {
@@ -34,6 +40,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use('/api/ai', aiRoutes);
 app.use('/auth', authRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

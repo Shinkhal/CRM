@@ -20,8 +20,8 @@ connectDB();
 const app = express();
 
 app.use(cors({
-  origin: process.env.CLIENT_URL,
-  credentials: true, // allow cookies to be sent
+  origin: 'https://crm-gamma-inky.vercel.app',
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));

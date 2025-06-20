@@ -7,6 +7,8 @@ import Orders from './pages/Orders.jsx';
 import Campaigns from './pages/Campaigns.jsx';
 import CampaignHistory from './pages/CampaignHistory.jsx';
 import CampaignLogs from './pages/CampaignLogs.jsx';
+import Home from './pages/Home.jsx';
+import Reports from './pages/Reports.jsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -68,6 +70,22 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/home"
+          element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path='/reports'
+          element={
+            <PrivateRoute>
+              <Reports/>
+            </PrivateRoute>
+          }
+          />
       </Routes>
     </>
   );

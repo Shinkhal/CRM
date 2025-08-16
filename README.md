@@ -1,5 +1,6 @@
 ![Node.js](https://img.shields.io/badge/Node.js-339933?logo=node.js&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-4ea94b?logo=mongodb&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-Deployed-black?logo=vercel)
 
 # 🧠 Mini CRM
@@ -15,7 +16,7 @@ A full-stack CRM platform designed to empower marketing teams with smart campaig
 - AI-powered segmentation and messaging
 - Message delivery via **SMTP** & **WhatsApp**
 - Business growth **insight generator** using **Google Gemini AI**
-- Cookie-based secure authentication
+- Cookie-based secure authentication (backed by **Redis session store**)
 - Fully responsive, modern UI with Tailwind CSS
 
 ---
@@ -75,6 +76,7 @@ A full-stack CRM platform designed to empower marketing teams with smart campaig
 - **JWT stored in HTTP-only cookies**
   - Safer against XSS
   - Auto-sent in each API request
+- Session management via **Redis** for scalability
 - Route protection using React context + backend middleware
 
 ---
@@ -103,7 +105,8 @@ A full-stack CRM platform designed to empower marketing teams with smart campaig
 | AI message generator                      | ✅     |
 | AI-powered growth tips (NEW)              | ✅     |
 | Google OAuth 2.0 login                    | ✅     |
-| **HTTP-only cookie authentication (NEW)** | ✅     |
+| **Redis-based session storage (NEW)**     | ✅     |
+| HTTP-only cookie authentication           | ✅     |
 | JWT middleware for route protection       | ✅     |
 | Protected frontend routes                 | ✅     |
 | Responsive Tailwind UI                    | ✅     |
@@ -121,40 +124,8 @@ A full-stack CRM platform designed to empower marketing teams with smart campaig
 | Messaging   | Nodemailer (SMTP), WhatsApp API          |
 | Auth        | Google OAuth 2.0, Passport.js, JWT       |
 | State Mgmt  | React Context API                        |
+| Session     | **Redis + connect-redis**                |
 | UX Tools    | Toastify, Lucide Icons                   |
-
----
-
-## 🧠 Sample AI Outputs
-
-**Segmentation Prompt:**
-
-```
-
-Users who spent over 10000 and ordered less than 3 times
-
-````
-
-**Gemini Output:**
-
-```json
-{
-  "totalSpend": { "$gt": 10000 },
-  "totalOrders": { "$lt": 3 }
-}
-````
-
-**Suggested Message:**
-
-```
-We miss you! Here's 10% off your next order. Shop now!
-```
-
-**Business Growth Tip (from /reports):**
-
-```
-Launch a referral campaign to boost engagement and customer acquisition.
-```
 
 ---
 
@@ -163,7 +134,7 @@ Launch a referral campaign to boost engagement and customer acquisition.
 ### 🔐 Auth
 
 * `POST /api/auth/google` — login
-* `GET /api/auth/me` — current user
+* `GET /api/auth/refresh` — refresh cookie
 * `POST /api/auth/logout` — clears cookie
 
 ### 👥 Customers
@@ -188,27 +159,34 @@ Launch a referral campaign to boost engagement and customer acquisition.
 * `POST /api/ai/messages` — campaign goal → message
 * `GET /api/dashboard/insights` — AI-powered business tips
 
+### 🏥 Health Check
+
+* `GET /health` — verify backend is running 
+
 ---
 
 ## 🗂️ Folder Structure
 
 ```
+
 /backend
-  ├── controllers/
-  ├── models/
-  ├── routes/
-  ├── middleware/
-  ├── services/      # AI + messaging logic
-  └── server.js
+├── config/        
+├── controllers/
+├── models/
+├── routes/
+├── middleware/
+├── services/      
+└── server.js
 
 /frontend
-  ├── pages/
-  ├── components/
-  ├── routes/
-  ├── context/
-  ├── api/
-  └── App.jsx / main.jsx
-```
+├── pages/
+├── components/
+├── routes/
+├── context/
+├── api/
+└── App.jsx / main.jsx
+
+````
 
 ---
 
@@ -220,7 +198,7 @@ Launch a referral campaign to boost engagement and customer acquisition.
 cd backend
 npm install
 npm run dev
-```
+````
 
 `.env`:
 
@@ -229,15 +207,24 @@ PORT=5000
 MONGODB_URI=your_mongodb_uri
 JWT_SECRET=your_jwt_secret
 CLIENT_URL=http://localhost:5173
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# Google AI
 GOOGLE_GEMINI_API_KEY=your_gemini_key
+
+# Google OAuth
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_secret
 
+# SMTP
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USER=email@example.com
 SMTP_PASS=your_password
 
+# WhatsApp API
 WHATSAPP_API_URL=https://api.example.com/send
 WHATSAPP_API_KEY=your_key
 ```
@@ -256,11 +243,10 @@ Access: [http://localhost:5173](http://localhost:5173)
 
 ---
 
-
 ## 👨‍💻 Author
 
 **Shinkhal Sinha**
-🌐 [shinkhal-sinha.online](https://shinkhal-sinha.online)
+🌐 [shinkhal-sinha.online](https://shinkhalsinha.vercel.app/)
 📫 [shinkhalsinha@gmail.com](mailto:shinkhalsinha@gmail.com)
 
 ---
@@ -268,5 +254,3 @@ Access: [http://localhost:5173](http://localhost:5173)
 ## 📝 License
 
 Open-source project for learning and portfolio demonstration.
-
-

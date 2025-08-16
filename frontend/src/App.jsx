@@ -11,7 +11,6 @@ import Home from './pages/Home.jsx';
 import Reports from './pages/Reports.jsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import BackendStatus from './components/BackendStatus.jsx';
 
 function App() {
   return (
@@ -27,69 +26,67 @@ function App() {
         pauseOnHover
         theme="light"
       />
-
-      <BackendStatus>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/auth-success" element={<AuthSuccess />} />
-          <Route
-            path="/customers"
-            element={
-              <PrivateRoute>
-                <Customers />
-              </PrivateRoute>
-            }
+      
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/auth-success" element={<AuthSuccess />} />
+        <Route
+          path="/customers"
+          element={
+            <PrivateRoute>
+              <Customers />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/orders"
+          element={
+            <PrivateRoute>
+              <Orders />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/campaigns"
+          element={
+            <PrivateRoute>
+              <Campaigns />
+            </PrivateRoute>
+          }
+        />  
+        <Route
+          path="/campaign-history"
+          element={
+            <PrivateRoute>
+              <CampaignHistory />
+            </PrivateRoute>
+          }
+        />
+        <Route 
+          path="/campaign/:id"
+          element={
+            <PrivateRoute>
+              <CampaignLogs />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/home"
+          element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path='/reports'
+          element={
+            <PrivateRoute>
+              <Reports/>
+            </PrivateRoute>
+          }
           />
-          <Route
-            path="/orders"
-            element={
-              <PrivateRoute>
-                <Orders />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/campaigns"
-            element={
-              <PrivateRoute>
-                <Campaigns />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/campaign-history"
-            element={
-              <PrivateRoute>
-                <CampaignHistory />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/campaign/:id"
-            element={
-              <PrivateRoute>
-                <CampaignLogs />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/home"
-            element={
-              <PrivateRoute>
-                <Home />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path='/reports'
-            element={
-              <PrivateRoute>
-                <Reports/>
-              </PrivateRoute>
-            }
-          />
-        </Routes>
-      </BackendStatus>
+      </Routes>
     </>
   );
 }

@@ -27,6 +27,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    
     const fetchAccessToken = async () => {
     try {
       const res = await axios.post(

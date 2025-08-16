@@ -3,21 +3,17 @@ import { Order } from '../models/Order.js';
 import { Campaign } from '../models/Campaign.js';
 import { CommunicationLog } from '../models/CommunicationLog.js';
 import { generateGrowthInsights } from '../services/aiService.js';
-import redisClient from '../config/redis.js';  // ✅ import redis
+import redisClient from '../config/redis.js';  
 
-// 🟢 Dashboard Summary with Redis Cache
 export const getDashboardSummary = async (req, res) => {
   try {
     const userId = req.user.id;
     const cacheKey = `dashboard:summary:${userId}`;
-
-    // 1️⃣ Check Redis cache
     const cached = await redisClient.get(cacheKey);
     if (cached) {
       return res.json({ source: "cache", ...JSON.parse(cached) });
     }
 
-    // 2️⃣ Fetch fresh data
     const [customers, orders, campaigns, logs] = await Promise.all([
       Customer.find({ userId }),
       Order.find({ userId }),
@@ -41,7 +37,6 @@ export const getDashboardSummary = async (req, res) => {
       messagesFailed,
     };
 
-    // 3️⃣ Save result in Redis for 5 minutes
     await redisClient.setEx(cacheKey, 300, JSON.stringify(summary));
 
     res.json({ source: "db", ...summary });
@@ -51,7 +46,6 @@ export const getDashboardSummary = async (req, res) => {
   }
 };
 
-// 🟢 Growth Insights with Redis Cache
 export const getGrowthInsights = async (req, res) => {
   try {
     if (!req.user?.id) {
@@ -61,13 +55,11 @@ export const getGrowthInsights = async (req, res) => {
     const userId = req.user.id;
     const cacheKey = `dashboard:insights:${userId}`;
 
-    // 1️⃣ Try Redis first
     const cached = await redisClient.get(cacheKey);
     if (cached) {
       return res.json({ source: "cache", ...JSON.parse(cached) });
     }
 
-    // 2️⃣ Query Mongo
     const queryTimeout = 10000; 
     const [customers, orders, campaigns, logs] = await Promise.allSettled([
       Customer.find({ userId }).maxTimeMS(queryTimeout).lean(),
@@ -101,7 +93,6 @@ export const getGrowthInsights = async (req, res) => {
       });
     }
 
-    // 3️⃣ Generate AI insights
     const insights = await generateGrowthInsights(customerData, orderData, campaignData, logData);
 
     const response = {
@@ -117,7 +108,6 @@ export const getGrowthInsights = async (req, res) => {
       }
     };
 
-    // 4️⃣ Cache for 15 minutes
     await redisClient.setEx(cacheKey, 900, JSON.stringify(response));
 
     res.json({ source: "db", ...response });

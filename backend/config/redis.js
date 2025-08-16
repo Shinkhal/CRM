@@ -1,4 +1,3 @@
-// config/redis.js
 import { createClient } from "redis";
 import dotenv from 'dotenv';
 dotenv.config();
@@ -10,7 +9,7 @@ const client = createClient({
 });
 
 client.on("connect", () => {
-  console.log("✅ Connected to Redis");
+  console.log("Connected to Redis");
 });
 
 client.on("error", (err) => {

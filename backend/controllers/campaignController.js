@@ -29,13 +29,13 @@ const buildQueryCondition = (rule, type = 'number') => {
 export const createCampaign = async (req, res) => {
   try {
     const { name, segmentRules, message } = req.body;
-    const userId = req.user.id; // <-- Authenticated user
+    const userId = req.user.id;
 
     if (!name || !segmentRules || !message) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const query = { userId }; // Only fetch user's customers
+    const query = { userId }; 
 
     try {
       if (segmentRules.totalSpend) {

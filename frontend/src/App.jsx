@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import AuthSuccess from './pages/AuthSuccess.jsx';
 import Customers from './pages/Customers.jsx';
 import PrivateRoute from './routes/PrivateRoutes.jsx';
@@ -12,7 +12,12 @@ import Reports from './pages/Reports.jsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+import { useAuth } from './context/AuthContext.jsx';
+
 function App() {
+  const { accessToken } = useAuth();
+  const location = useLocation();
+
   return (
     <>
       <ToastContainer
@@ -26,9 +31,18 @@ function App() {
         pauseOnHover
         theme="light"
       />
-      
+
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route
+          path="/"
+          element={
+            accessToken ? (
+              <Navigate to="/home" state={{ from: location }} replace />
+            ) : (
+              <Landing />
+            )
+          }
+        />
         <Route path="/auth-success" element={<AuthSuccess />} />
         <Route
           path="/customers"
@@ -53,7 +67,7 @@ function App() {
               <Campaigns />
             </PrivateRoute>
           }
-        />  
+        />
         <Route
           path="/campaign-history"
           element={
@@ -62,7 +76,7 @@ function App() {
             </PrivateRoute>
           }
         />
-        <Route 
+        <Route
           path="/campaign/:id"
           element={
             <PrivateRoute>
@@ -79,13 +93,13 @@ function App() {
           }
         />
         <Route
-          path='/reports'
+          path="/reports"
           element={
             <PrivateRoute>
-              <Reports/>
+              <Reports />
             </PrivateRoute>
           }
-          />
+        />
       </Routes>
     </>
   );

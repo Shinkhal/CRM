@@ -9,7 +9,10 @@ const customerSchema = new mongoose.Schema(
     totalOrders: { type: Number, default: 0 },
     lastOrderDate: { type: Date },
     createdAt: { type: Date, default: Date.now },
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    
+    // Instead of userId, link to the business
+    business: { type: mongoose.Schema.Types.ObjectId, ref: 'Business', required: true },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // optional: track who added
   },
   { timestamps: true }
 );

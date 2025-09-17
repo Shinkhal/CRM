@@ -3,26 +3,34 @@ import { Order } from '../models/Order.js';
 import { Campaign } from '../models/Campaign.js';
 import { CommunicationLog } from '../models/CommunicationLog.js';
 import { generateGrowthInsights } from '../services/aiService.js';
-import redisClient from '../config/redis.js';  
+import redisClient from '../config/redis.js';
 
+// ---------------------------
+// Dashboard Summary (Admins, Managers, Viewers)
+// ---------------------------
 export const getDashboardSummary = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const cacheKey = `dashboard:summary:${userId}`;
+    const { businessId, role } = req.user;
+
+    if (!businessId) {
+      return res.status(400).json({ error: 'No business associated with user' });
+    }
+
+    const cacheKey = `dashboard:summary:${businessId}`;
     const cached = await redisClient.get(cacheKey);
     if (cached) {
       return res.json({ source: "cache", ...JSON.parse(cached) });
     }
 
+    // Fetch all business data
     const [customers, orders, campaigns, logs] = await Promise.all([
-      Customer.find({ userId }),
-      Order.find({ userId }),
-      Campaign.find({ userId }),
-      CommunicationLog.find({ userId }),
+      Customer.find({ business: businessId }),
+      Order.find({ business: businessId }),
+      Campaign.find({ business: businessId }),
+      CommunicationLog.find({ business: businessId }),
     ]);
 
     const totalRevenue = orders.reduce((sum, o) => sum + o.amount, 0);
-
     const totalMessages = logs.length;
     const messagesSent = logs.filter(l => l.status === 'SENT').length;
     const messagesFailed = logs.filter(l => l.status === 'FAILED').length;
@@ -46,26 +54,33 @@ export const getDashboardSummary = async (req, res) => {
   }
 };
 
+// ---------------------------
+// Growth Insights (Admins only)
+// ---------------------------
 export const getGrowthInsights = async (req, res) => {
   try {
-    if (!req.user?.id) {
-      return res.status(401).json({ error: 'User authentication required' });
+    const { businessId, role } = req.user;
+
+    if (!businessId) {
+      return res.status(400).json({ error: 'No business associated with user' });
     }
 
-    const userId = req.user.id;
-    const cacheKey = `dashboard:insights:${userId}`;
+    if (role !== 'admin') {
+      return res.status(403).json({ error: 'Only admins can access growth insights' });
+    }
 
+    const cacheKey = `dashboard:insights:${businessId}`;
     const cached = await redisClient.get(cacheKey);
     if (cached) {
       return res.json({ source: "cache", ...JSON.parse(cached) });
     }
 
-    const queryTimeout = 10000; 
+    const queryTimeout = 10000; // 10 seconds
     const [customers, orders, campaigns, logs] = await Promise.allSettled([
-      Customer.find({ userId }).maxTimeMS(queryTimeout).lean(),
-      Order.find({ userId }).maxTimeMS(queryTimeout).lean(),
-      Campaign.find({ userId }).maxTimeMS(queryTimeout).lean(),
-      CommunicationLog.find({ userId }).maxTimeMS(queryTimeout).lean()
+      Customer.find({ businessId }).maxTimeMS(queryTimeout).lean(),
+      Order.find({ businessId }).maxTimeMS(queryTimeout).lean(),
+      Campaign.find({ businessId }).maxTimeMS(queryTimeout).lean(),
+      CommunicationLog.find({ businessId }).maxTimeMS(queryTimeout).lean()
     ]);
 
     const failedQueries = [customers, orders, campaigns, logs]

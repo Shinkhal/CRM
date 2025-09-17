@@ -1,11 +1,13 @@
 import express from 'express';
 import { createOrder, getOrders } from '../controllers/orderController.js';
-import { protect } from '../middleware/authMiddleware.js';
+import { protect, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/',protect, createOrder);
-router.get('/',protect, getOrders);
+// Only admin and manager can create orders
+router.post('/', protect, authorize(['admin', 'manager']), createOrder);
 
+// All roles can view orders
+router.get('/', protect, authorize(['admin', 'manager', 'viewer']), getOrders);
 
 export default router;

@@ -1,18 +1,18 @@
 // models/User.js
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema({
-  googleId: { type: String, required: true, unique: true },
-  email: { type: String, required: true, unique: true },
-  name: String,
-  image: String,
-  role: { 
-    type: String, 
-    enum: ['admin', 'manager', 'viewer'], 
-    default: 'viewer' 
+const userSchema = new mongoose.Schema(
+  {
+    googleId: { type: String, unique: true, sparse: true }, // allow null until login
+    email: { type: String, required: true, unique: true },
+    name: String,
+    image: String,
+
+    // 🔑 Remove "role" here, role lives in Business.users[]
+    business: { type: mongoose.Schema.Types.ObjectId, ref: "Business" },
   },
-  business: { type: mongoose.Schema.Types.ObjectId, ref: 'Business' }
-}, { timestamps: true });
+  { timestamps: true }
+);
 
-const User = mongoose.models.User || mongoose.model('User', userSchema);
+const User = mongoose.models.User || mongoose.model("User", userSchema);
 export default User;

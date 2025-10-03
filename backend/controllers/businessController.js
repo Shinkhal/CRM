@@ -3,62 +3,251 @@ import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import { sendEmail } from '../services/emailSender.js';
 
-// --------------------
-// Invite a new member
-// --------------------
+
 export const inviteMember = async (req, res) => {
   try {
     const { email, role } = req.body;
     const business = await Business.findById(req.user.businessId);
 
-    if (!business) return res.status(404).json({ message: 'Business not found' });
-
-    // Only admins can invite
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Only admins can invite team members' });
+    if (!business) {
+      return res.status(404).json({ message: "Business not found" });
     }
 
-    // Check if user already exists in business
-    const alreadyMember = business.users.find(u => u.user.toString() === email);
-    const alreadyInvited = business.pendingInvites.find(inv => inv.email === email);
+    // Only admins can invite
+    const inviter = business.users.find(
+      u => u.user.toString() === req.user.id && u.role === "admin"
+    );
+    if (!inviter) {
+      return res
+        .status(403)
+        .json({ message: "Only admins can invite team members" });
+    }
+
+    // Check if a user with this email exists
+    const existingUser = await User.findOne({ email });
+
+    // If user exists, make sure they’re not already part of this business
+    const alreadyMember =
+      existingUser &&
+      business.users.some(
+        u => u.user.toString() === existingUser._id.toString()
+      );
+
+    const alreadyInvited = business.pendingInvites.some(
+      inv => inv.email === email
+    );
 
     if (alreadyMember || alreadyInvited) {
-      return res.status(400).json({ message: 'User already exists or invited' });
+      return res
+        .status(400)
+        .json({ message: "User already exists or is already invited" });
     }
 
     // Generate invite token
     const token = jwt.sign(
       { email, businessId: business._id, role },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: "7d" }
     );
 
+    // Save invite
     business.pendingInvites.push({ email, role, token });
     await business.save();
 
     // Send invitation email
     const inviteLink = `${process.env.SERVER_URL}/auth/google?inviteToken=${token}`;
-    
+
     const emailSubject = `You're invited to join ${business.name}!`;
     const emailBody = generateInviteEmailHTML({
       businessName: business.name,
-      role: role,
-      inviteLink: inviteLink,
-      email: email
+      role,
+      inviteLink,
+      email,
     });
+
     const emailResult = await sendEmail(email, emailSubject, emailBody, true);
     if (!emailResult.success) {
-      console.error('Failed to send invite email:', emailResult.error);
-      return res.status(500).json({ message: 'Failed to send invitation email' });
+      console.error("Failed to send invite email:", emailResult.error);
+      return res
+        .status(500)
+        .json({ message: "Failed to send invitation email" });
     }
-
 
     res.json({ message: `Invite sent to ${email}` });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error("inviteMember error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
+
+
+
+export const acceptInvite = async (req, res) => {
+  try {
+    const { token } = req.body;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const { email, businessId, role } = decoded;
+
+    // Ensure the logged-in user email matches invite
+    if (req.user.email !== email) {
+      return res.status(403).json({ message: 'Invite not valid for this account' });
+    }
+
+    const business = await Business.findById(businessId);
+    if (!business) return res.status(404).json({ message: 'Business not found' });
+
+    // 🚨 Check if user already belongs to a business
+    const alreadyInBusiness = await Business.findOne({ "users.user": req.user.id });
+    if (alreadyInBusiness) {
+      return res.status(400).json({ message: "User already belongs to another business" });
+    }
+
+    // Add user to business users
+    business.users.push({ user: req.user.id, role });
+
+    // Remove from pending invites
+    business.pendingInvites = business.pendingInvites.filter(inv => inv.email !== email);
+
+    await business.save();
+
+    // Send welcome email
+    const welcomeSubject = `Welcome to ${business.name}!`;
+    const welcomeEmailBody = generateWelcomeEmailHTML({
+      businessName: business.name,
+      userName: req.user.name,
+      role
+    });
+
+    const welcomeEmailResult = await sendEmail(
+      req.user.email,
+      welcomeSubject,
+      welcomeEmailBody,
+      true
+    );
+
+    if (!welcomeEmailResult.success) {
+      console.error("Failed to send welcome email:", welcomeEmailResult.error);
+      // Continue even if welcome email fails
+    }
+
+    res.json({ message: "Joined business successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ message: "Invalid or expired token" });
+  }
+};
+
+
+export const getTeam = async (req, res) => {
+  try {
+    const business = await Business.findById(req.user.businessId)
+      .populate("users.user", "name email"); // ✅ only pull from User schema
+
+    if (!business) {
+      return res.status(404).json({ message: "Business not found" });
+    }
+
+    res.json({
+      users: business.users, // each will have { user: {name, email}, role }
+      pendingInvites: business.pendingInvites
+    });
+  } catch (err) {
+    console.error("getTeam error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+export const updateMemberRole = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    if (!["admin", "manager", "viewer"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role provided" });
+    }
+
+    // Check if user exists and belongs to the same business
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.business.toString() !== req.user.businessId.toString()) {
+      return res.status(403).json({ message: "User not in your business" });
+    }
+
+    // Update role
+    user.role = role;
+    await user.save();
+
+    // Fetch updated business users with populated user info
+    const business = await Business.findById(req.user.businessId).populate({
+      path: "users",
+      select: "_id name email role",
+    });
+
+    const usersWithRole = business.users.map((u) => ({ user: u, role: u.role }));
+
+    res.json({
+      message: "Role updated successfully",
+      users: usersWithRole,
+      pendingInvites: business.pendingInvites,
+    });
+  } catch (err) {
+    console.error("updateMemberRole error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+export const removeMember = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    const business = await Business.findById(req.user.businessId);
+    if (!business) {
+      return res.status(404).json({ message: "Business not found" });
+    }
+
+    // ✅ Only admins can remove members
+    const requestingUser = business.users.find(u => u.user.toString() === req.user.id);
+    if (!requestingUser || requestingUser.role !== "admin") {
+      return res.status(403).json({ message: "Only admins can remove members" });
+    }
+
+    // ✅ Check if target user exists in the business
+    const targetUser = business.users.find(u => u.user.toString() === userId);
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found in team" });
+    }
+
+    // ✅ Prevent removing the only admin
+    if (targetUser.role === "admin") {
+      const adminCount = business.users.filter(u => u.role === "admin").length;
+      if (adminCount <= 1) {
+        return res.status(400).json({ message: "Cannot remove the only admin" });
+      }
+    }
+
+    // ✅ Remove member
+    business.users = business.users.filter(u => u.user.toString() !== userId);
+    await business.save();
+
+    // ✅ Return updated populated list
+    const updatedBusiness = await Business.findById(req.user.businessId)
+      .populate("users.user", "name email");
+
+    res.json({
+      message: "User removed from team",
+      users: updatedBusiness.users,
+    });
+  } catch (err) {
+    console.error("removeMember error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
 
 // --------------------
 // Generate HTML email template for invitation
@@ -212,54 +401,6 @@ const generateInviteEmailHTML = ({ businessName,  role, inviteLink, email }) => 
 };
 
 // --------------------
-// Accept invite
-// --------------------
-export const acceptInvite = async (req, res) => {
-  try {
-    const { token } = req.body;
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    const { email, businessId, role } = decoded;
-
-    // Ensure the logged-in user email matches invite
-    if (req.user.email !== email) {
-      return res.status(403).json({ message: 'Invite not valid for this account' });
-    }
-
-    const business = await Business.findById(businessId);
-    if (!business) return res.status(404).json({ message: 'Business not found' });
-
-    // Add user to business users
-    business.users.push({ user: req.user.id, role });
-
-    // Remove from pending invites
-    business.pendingInvites = business.pendingInvites.filter(inv => inv.email !== email);
-
-    await business.save();
-
-    // Send welcome email
-    const welcomeSubject = `Welcome to ${business.name}!`;
-    const welcomeEmailBody = generateWelcomeEmailHTML({
-      businessName: business.name,
-      userName: req.user.name,
-      role: role
-    });
-
-    const welcomeEmailResult = await sendEmail(req.user.email, welcomeSubject, welcomeEmailBody, true);
-    
-    if (!welcomeEmailResult.success) {
-      console.error('Failed to send welcome email:', welcomeEmailResult.error);
-      // Continue even if welcome email fails
-    }
-
-    res.json({ message: 'Joined business successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(400).json({ message: 'Invalid or expired token' });
-  }
-};
-
-// --------------------
 // Generate welcome email template
 // --------------------
 const generateWelcomeEmailHTML = ({ businessName, userName, role }) => {
@@ -352,84 +493,3 @@ const generateWelcomeEmailHTML = ({ businessName, userName, role }) => {
     </html>
   `;
 };
-
-// --------------------
-// Get all users in business
-// --------------------
-
-// ✅ Get all team members (already written)
-export const getTeam = async (req, res) => {
-  try {
-    const business = await Business.findById(req.user.businessId)
-      .populate("users.user", "name email role");
-    if (!business) return res.status(404).json({ message: "Business not found" });
-
-    res.json({ users: business.users, pendingInvites: business.pendingInvites });
-  } catch (err) {
-    console.error("getTeam error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-
-// ✅ Update member role
-
-export const updateMemberRole = async (req, res) => {
-  try {
-    const { userId } = req.params;   // from URL
-    const { role } = req.body;       // from body
-
-    if (!['admin', 'manager', 'viewer'].includes(role)) {
-      return res.status(400).json({ message: "Invalid role provided" });
-    }
-
-    // Find the business of the logged-in user
-    const business = await Business.findById(req.user.businessId);
-    if (!business) {
-      return res.status(404).json({ message: "Business not found" });
-    }
-
-    // Find member inside business.users
-    const memberIndex = business.users.findIndex(
-      u => u.user.toString() === userId
-    );
-
-    if (memberIndex === -1) {
-      return res.status(404).json({ message: "User not found in team" });
-    }
-
-    // Update role
-    business.users[memberIndex].role = role;
-
-    await business.save();
-
-    res.json({
-      message: "Role updated successfully",
-      users: business.users
-    });
-  } catch (err) {
-    console.error("updateMemberRole error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-
-
-// ✅ Remove a member from the team
-export const removeMember = async (req, res) => {
-  try {
-    const { userId } = req.body;
-    const business = await Business.findById(req.user.businessId);
-    if (!business) return res.status(404).json({ message: "Business not found" });
-
-    business.users = business.users.filter(u => u.user.toString() !== userId);
-    await business.save();
-
-    res.json({ message: "User removed from team", users: business.users });
-  } catch (err) {
-    console.error("removeMember error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-

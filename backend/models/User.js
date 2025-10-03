@@ -8,7 +8,12 @@ const userSchema = new mongoose.Schema(
     name: String,
     image: String,
 
-    // 🔑 Remove "role" here, role lives in Business.users[]
+    role: {
+  type: String,
+  enum: ['admin', 'manager', 'viewer'],
+  default: 'viewer'
+}
+,
     business: { type: mongoose.Schema.Types.ObjectId, ref: "Business" },
   },
   { timestamps: true }

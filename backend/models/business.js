@@ -6,25 +6,24 @@ const businessSchema = new mongoose.Schema(
     name: { type: String, required: true },
     industry: String,
 
+    // Business always has one owner (admin by default)
     owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 
+    // List of users in this business (no role here, role lives in User now)
     users: [
       {
-        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        role: {
-          type: String,
-          enum: ["admin", "manager", "viewer"],
-          default: "viewer",
-        },
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
       },
     ],
 
+    // Pending invites still need role → keep role here
     pendingInvites: [
       {
         email: { type: String, required: true },
         role: {
           type: String,
-          enum: ["manager", "viewer"], 
+          enum: ["manager", "viewer"], // invited role
           required: true,
         },
         token: String,

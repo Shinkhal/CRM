@@ -30,7 +30,9 @@ router.get(
       // Extract inviteToken if passed via state
       let inviteToken = null;
       if (req.query.state) {
-        const decodedState = JSON.parse(Buffer.from(req.query.state, 'base64').toString());
+        const decodedState = JSON.parse(
+          Buffer.from(req.query.state, 'base64').toString()
+        );
         inviteToken = decodedState.inviteToken;
       }
 
@@ -54,13 +56,15 @@ router.get(
               return res.redirect(`${process.env.CLIENT_URL}/auth-failure`);
             }
 
-            // attach user to invited business
-            business.users.push({ user: user._id, role });
-            business.pendingInvites = business.pendingInvites.filter(inv => inv.email !== email);
+            // attach user to invited business (just push ID now)
+            business.users.push(user._id);
+            business.pendingInvites = business.pendingInvites.filter(
+              (inv) => inv.email !== email
+            );
             await business.save();
 
             user.business = business._id;
-            user.role = role;
+            user.role = role; // role is now in User
           } catch (err) {
             console.error('Invalid invite token:', err);
             return res.redirect(`${process.env.CLIENT_URL}/auth-failure`);
@@ -69,12 +73,13 @@ router.get(
           // ✅ Case: Normal signup → create new business
           const business = new Business({
             name: `${name}'s Business`,
-            owner: user._id
+            owner: user._id,
+            users: [user._id], // add owner as first user
           });
           await business.save();
 
           user.business = business._id;
-          user.role = 'admin';
+          user.role = 'admin'; // owner defaults to admin
         }
 
         await user.save();
@@ -87,7 +92,7 @@ router.get(
           id: user._id,
           email: user.email,
           name: user.name,
-          role: user.role,
+          role: user.role, // ✅ comes from User schema now
           businessId: user.business?._id,
         },
         process.env.JWT_SECRET,
@@ -105,7 +110,7 @@ router.get(
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'none',
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
 
       // ✅ Redirect with access token
@@ -118,6 +123,7 @@ router.get(
     }
   }
 );
+
 
 // Refresh token route
 router.post('/refresh', async (req, res) => {

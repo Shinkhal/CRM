@@ -1,23 +1,25 @@
-![Node.js](https://img.shields.io/badge/Node.js-339933?logo=node.js&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-4ea94b?logo=mongodb&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?logo=node.js\&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-4ea94b?logo=mongodb\&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis\&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-Deployed-black?logo=vercel)
 
 # 🧠 Mini CRM
 
-A full-stack CRM platform designed to empower marketing teams with smart campaign management, customer insights, and AI-powered business intelligence.
+A full-stack CRM platform designed to empower marketing teams with smart campaign management, team collaboration, customer insights, and AI-powered business intelligence.
 
 ---
 
 ## ✨ Key Features
 
-- Customer & order management with automatic stats
-- Campaign builder with real-time audience preview
-- AI-powered segmentation and messaging
-- Message delivery via **SMTP** & **WhatsApp**
-- Business growth **insight generator** using **Google Gemini AI**
-- Cookie-based secure authentication (backed by **Redis session store**)
-- Fully responsive, modern UI with Tailwind CSS
+* Customer & order management with automatic stats
+* Campaign builder with real-time audience preview
+* AI-powered segmentation and messaging
+* Team roles using **Role-Based Access (RBA)**
+* Business owner can invite **managers, analysts, viewers**
+* Message delivery via **SMTP** & **WhatsApp**
+* Business growth **insight generator** using **Google Gemini AI**
+* Secure, scalable authentication using **HTTP-only cookies + Redis session store**
+* Fully responsive, modern UI with Tailwind CSS
 
 ---
 
@@ -33,142 +35,135 @@ A full-stack CRM platform designed to empower marketing teams with smart campaig
 
 ### 👥 Customer Management
 
-- Add, update, and view customer profiles
-- Tracks `totalSpend`, `totalOrders`, `lastOrderDate` automatically
+* Add, update, and view customer profiles
+* Tracks `totalSpend`, `totalOrders`, `lastOrderDate` automatically
 
 ### 🛒 Order Management
 
-- Orders linked to customers
-- Auto-updates related customer stats on insertion
+* Orders linked to customers
+* Auto-updates related customer stats instantly
 
 ### 📣 Campaign Builder
 
-- Input campaign name, message, and rules
-- Uses **Google Gemini AI** to:
-  - Parse natural language segment prompts into MongoDB queries
-  - Suggest short, engaging marketing messages
+* Input campaign name, message, and segmentation rules
+* Uses **Google Gemini AI** to:
+
+  * Convert natural language → MongoDB query
+  * Suggest short, engaging messaging
 
 ### 👁️ Audience Preview
 
-- View real-time filtered list of customers who match campaign criteria
+* Real-time filtered list of customers matching rules
 
 ### ✉️ Messaging Delivery
 
-- Send messages through:
-  - **📧 Email** via SMTP
-  - **📱 WhatsApp** via external API
-- All delivery logs are stored and viewable
+* Supports:
+
+  * **📧 Email** (SMTP)
+  * **📱 WhatsApp API**
+* Logs everything:
+
+  * Message status (SENT/FAILED)
+  * Vendor response
+  * Timestamp
 
 ### 📊 Campaign History & Logs
 
-- Access all past campaigns
-- View logs per customer, status (SENT/FAILED), and vendor response
+* Full log history for each campaign
+* Transparency for debugging and delivery monitoring
 
-### 📈 Business Insights (NEW)
+### 📈 Business Insights
 
-- Route: `/reports`
-- Fetches smart business tips via AI (`/api/dashboard/insights`)
-- Helps users improve engagement, increase conversions, and grow their audience
+* Route: `/reports`
+* AI-powered business improvement tips via:
+
+  * `/api/dashboard/insights`
+* Helps improve conversions and retention
 
 ### 🔐 Authentication
 
-- **Google OAuth 2.0** via Passport.js
-- **JWT stored in HTTP-only cookies**
-  - Safer against XSS
-  - Auto-sent in each API request
-- Session management via **Redis** for scalability
-- Route protection using React context + backend middleware
+* **Google OAuth 2.0** (Passport.js)
+* **HTTP-only cookies**
+
+  * Safer against XSS
+  * Fully managed server-side
+* **Redis session store**
+
+  * Faster
+  * Scalable
+* Role-based access protection
+* Frontend route protection using Context API
+
+---
+
+## 🧑‍🤝‍🧑 Role-Based Access (RBA)
+
+Now includes team roles:
+
+* 👑 **Owner** — full control, invites members
+* 🔧 **Manager** — can manage customers, orders, and campaigns
+* 👁️ **Viewer** — read-only dashboard and analytics
+
+### Access is controlled at:
+
+* Backend middleware
+* Session validation
+* Frontend routing
+* UI visibility rules
 
 ---
 
 ## 💡 AI-Powered Tools (Google Gemini)
 
-| Feature                        | Route                     | Model                  |
-|-------------------------------|---------------------------|------------------------|
-| Prompt → Mongo filter         | `/api/ai/segment`         | `gemini-1.5-flash-8b`  |
-| Segment goal → Message        | `/api/ai/messages`        | `gemini-2.0-flash`     |
-| Dashboard Tips & Insights     | `/api/dashboard/insights` | `gemini-1.5-flash-8b`  |
+| Feature                   | Description                          |
+| ------------------------- | ------------------------------------ |
+| Prompt → Mongo filter     | Converts natural rules to DB queries |
+| Segment goal → Message    | Suggests strong marketing messages   |
+| Dashboard Tips & Insights | Personalized business intelligence   |
 
 ---
 
 ## ✅ Feature Checklist
 
-| Feature                                    | Status |
-|-------------------------------------------|--------|
-| Customer ingestion                        | ✅     |
-| Order ingestion + stats update            | ✅     |
-| Campaign creation + audience preview      | ✅     |
-| SMTP email delivery                       | ✅     |
-| WhatsApp message integration              | ✅     |
-| Per-campaign delivery logs                | ✅     |
-| AI prompt → MongoDB query                 | ✅     |
-| AI message generator                      | ✅     |
-| AI-powered growth tips (NEW)              | ✅     |
-| Google OAuth 2.0 login                    | ✅     |
-| **Redis-based session storage (NEW)**     | ✅     |
-| HTTP-only cookie authentication           | ✅     |
-| JWT middleware for route protection       | ✅     |
-| Protected frontend routes                 | ✅     |
-| Responsive Tailwind UI                    | ✅     |
-| Dashboard overview with cards & stats     | ✅     |
+| Feature                              | Status |
+| ------------------------------------ | ------ |
+| Customer ingestion                   | ✅      |
+| Order ingestion + stats update       | ✅      |
+| Campaign creation + audience preview | ✅      |
+| SMTP email delivery                  | ✅      |
+| WhatsApp message integration         | ✅      |
+| Per-campaign delivery logs           | ✅      |
+| AI prompt → MongoDB query            | ✅      |
+| AI message generator                 | ✅      |
+| AI-powered growth tips               | ✅      |
+| Google OAuth 2.0 login               | ✅      |
+| Redis-based session storage          | ✅      |
+| HTTP-only cookie authentication      | ✅      |
+| Role-Based Access (RBA)              | ✅      |
+| Team member invitations              | ✅      |
+| Responsive Tailwind UI               | ✅      |
+| Dashboard overview with stats        | ✅      |
 
 ---
 
 ## 🧪 Technologies Used
 
 | Layer       | Stack                                    |
-|-------------|------------------------------------------|
+| ----------- | ---------------------------------------- |
 | Frontend    | React (Vite), Tailwind CSS, React Router |
 | Backend     | Node.js, Express, Mongoose (MongoDB)     |
 | AI Services | Google Gemini AI                         |
 | Messaging   | Nodemailer (SMTP), WhatsApp API          |
 | Auth        | Google OAuth 2.0, Passport.js, JWT       |
 | State Mgmt  | React Context API                        |
-| Session     | **Redis + connect-redis**                |
+| Session     | Redis + connect-redis                    |
 | UX Tools    | Toastify, Lucide Icons                   |
-
----
-
-## 🧭 Routes Overview
-
-### 🔐 Auth
-
-* `POST /api/auth/google` — login
-* `GET /api/auth/refresh` — refresh cookie
-* `POST /api/auth/logout` — clears cookie
-
-### 👥 Customers
-
-* `POST /api/customers` — create
-* `GET /api/customers` — list
-
-### 🛒 Orders
-
-* `POST /api/orders` — create
-* `GET /api/orders` — list
-
-### 📣 Campaigns
-
-* `POST /api/campaigns` — create
-* `GET /api/campaigns` — list
-* `GET /api/campaigns/:id/logs` — delivery log
-
-### 🧠 AI
-
-* `POST /api/ai/segment` — prompt → MongoDB query
-* `POST /api/ai/messages` — campaign goal → message
-* `GET /api/dashboard/insights` — AI-powered business tips
-
-### 🏥 Health Check
-
-* `GET /health` — verify backend is running 
 
 ---
 
 ## 🗂️ Folder Structure
 
 ```
-
 /backend
 ├── config/        
 ├── controllers/
@@ -185,8 +180,7 @@ A full-stack CRM platform designed to empower marketing teams with smart campaig
 ├── context/
 ├── api/
 └── App.jsx / main.jsx
-
-````
+```
 
 ---
 
@@ -198,9 +192,9 @@ A full-stack CRM platform designed to empower marketing teams with smart campaig
 cd backend
 npm install
 npm run dev
-````
+```
 
-`.env`:
+`.env` configuration:
 
 ```env
 PORT=5000
@@ -239,18 +233,20 @@ npm install
 npm run dev
 ```
 
-Access: [http://localhost:5173](http://localhost:5173)
+Access frontend at:
+➡️ [http://localhost:5173](http://localhost:5173)
 
 ---
 
 ## 👨‍💻 Author
 
 **Shinkhal Sinha**
-🌐 [shinkhal-sinha.online](https://shinkhalsinha.vercel.app/)
-📫 [shinkhalsinha@gmail.com](mailto:shinkhalsinha@gmail.com)
+
 
 ---
 
 ## 📝 License
 
 Open-source project for learning and portfolio demonstration.
+
+

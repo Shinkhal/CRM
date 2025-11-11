@@ -27,31 +27,31 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    
     const fetchAccessToken = async () => {
-    try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/auth/refresh`,
-        {},
-        { withCredentials: true }
-      );
-      updateAccessToken(res.data.accessToken);
-    } catch (err) {
-      console.error('Failed to fetch access token:', err);
-      updateAccessToken(null);
-      if (window.location.pathname !== '/') {
-        window.location.href = '/';
+      try {
+        const res = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/auth/refresh`,
+          {},
+          { withCredentials: true }
+        );
+        updateAccessToken(res.data.accessToken);
+      } catch (err) {
+        console.error('Failed to fetch access token:', err);
+        updateAccessToken(null);
+        // ❌ Do NOT redirect here! Let AuthSuccess handle inviteToken
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
     fetchAccessToken();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ accessToken, setAccessToken: updateAccessToken, loading, logout }}>
-      {!loading && children}
+    <AuthContext.Provider
+      value={{ accessToken, setAccessToken: updateAccessToken, loading, logout }}
+    >
+      {children}
     </AuthContext.Provider>
   );
 };

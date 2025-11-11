@@ -1,5 +1,31 @@
 @import "tailwindcss";
 
-::-webkit-scrollbar{
-    display: none;
+::-webkit-scrollbar {
+  display: none;
+}
+
+@theme {
+  /* Background layers */
+  --color-primary: #F7F9FC;      /* main background */
+  --color-secondary: #FFFFFF;    /* card background */
+  --color-elevated: #F1F5F9;     /* subtle surface */
+
+  /* Borders */
+  --color-border-soft: #E2E8F0;
+  --color-border-strong: #CBD5E1;
+
+  /* Text */
+  --color-text-primary: #1E293B;
+  --color-text-secondary: #64748B;
+
+  /* Accent colors (modern, vibrant) */
+  --color-accent: #3B82F6;        /* blue */
+  --color-accent-glow: #6366F1;   /* indigo */
+  --color-success: #22C55E;
+  --color-warn: #F59E0B;
+  --color-danger: #EF4444;
+
+  /* Shadows */
+  --shadow-soft: 0 4px 20px rgba(0,0,0,0.08);
+  --shadow-glow: 0 0 24px rgba(59,130,246,0.3);
 }

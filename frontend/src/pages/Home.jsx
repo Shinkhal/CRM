@@ -3,83 +3,92 @@ import axios from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import { toast } from 'react-toastify';
-import { Users, ShoppingCart, IndianRupee, Megaphone, MessageSquare, TrendingUp, Calendar, Activity, MessageCircleReply, MessageCircleOff } from 'lucide-react';
+import { useUser } from '../context/UserContext';
+import { Users, ShoppingCart, IndianRupee, Megaphone, MessageSquare, TrendingUp, Calendar, Activity, MessageCircleReply, MessageCircleOff, ArrowUpRight } from 'lucide-react';
 
 const Home = () => {
   const { accessToken } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { user } = useUser();
 
   useEffect(() => {
     const fetchSummary = async () => {
+      if (!accessToken || !user) return;
+
       try {
-        setLoading(true);
-        const res = await axios.get('/dashboard/summary', {
-          headers: {
-            Authorization: `Bearer ${accessToken}`
+        const res = await axios.get(
+          '/dashboard/summary',
+          { businessId: user.businessId }, 
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
           }
-        });
+        );
+
         setStats(res.data);
-      } catch (error) {
-        console.error('Failed to fetch summary:', error);
-        toast.error('Failed to load dashboard data');
+      } catch (err) {
+        toast.error(
+          err.response?.data?.message || "Failed to load dashboard summary"
+        );
       } finally {
         setLoading(false);
       }
     };
 
-    if (accessToken) fetchSummary();
-  }, [accessToken]);
+    fetchSummary();
+  }, [accessToken, user]);
 
   const cards = [
     { 
       title: 'Total Customers', 
       value: stats?.totalCustomers || 0, 
       icon: Users,
-      gradient: 'from-blue-500 to-blue-600',
-      lightGradient: 'from-blue-50 to-blue-100'
+      color: '#3B82F6',
+      bgColor: '#EFF6FF'
     },
     { 
       title: 'Total Orders', 
       value: stats?.totalOrders || 0, 
       icon: ShoppingCart,
-      gradient: 'from-emerald-500 to-emerald-600',
-      lightGradient: 'from-emerald-50 to-emerald-100'
+      color: '#22C55E',
+      bgColor: '#F0FDF4'
     },
     { 
       title: 'Total Revenue', 
       value: `₹${(stats?.totalRevenue || 0).toLocaleString()}`, 
       icon: IndianRupee,
-      gradient: 'from-purple-500 to-purple-600',
-      lightGradient: 'from-purple-50 to-purple-100'
+      color: '#6366F1',
+      bgColor: '#EEF2FF'
     },
     { 
       title: 'Total Campaigns', 
       value: stats?.totalCampaigns || 0, 
       icon: Megaphone,
-      gradient: 'from-orange-500 to-orange-600',
-      lightGradient: 'from-orange-50 to-orange-100'
+      color: '#F59E0B',
+      bgColor: '#FFFBEB'
     },
     {
-        title: 'Total Messages',
-        value: (stats?.totalMessages || 0).toLocaleString(),
-        icon: MessageSquare,
-        gradient: 'from-teal-500 to-teal-600',
-        lightGradient: 'from-teal-50 to-teal-100'
+      title: 'Total Messages',
+      value: (stats?.totalMessages || 0).toLocaleString(),
+      icon: MessageSquare,
+      color: '#14B8A6',
+      bgColor: '#F0FDFA'
     },
     { 
       title: 'Messages Sent', 
       value: (stats?.messagesSent || 0).toLocaleString(), 
       icon: MessageCircleReply,
-      gradient: 'from-indigo-500 to-indigo-600',
-      lightGradient: 'from-indigo-50 to-indigo-100'
+      color: '#8B5CF6',
+      bgColor: '#F5F3FF'
     },
     { 
       title: 'Messages Failed', 
       value: (stats?.messagesFailed || 0).toLocaleString(), 
       icon: MessageCircleOff,
-      gradient: 'from-red-500 to-red-600',
-      lightGradient: 'from-red-50 to-red-100'
+      color: '#EF4444',
+      bgColor: '#FEF2F2'
     }
   ];
 
@@ -90,143 +99,186 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-[#F7F9FC]">
       <Navbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-10">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard Overview</h1>
-              <p className="text-gray-600">Welcome back! Here's what's happening with your business today.</p>
+              <h1 className="text-4xl font-bold text-[#1E293B] mb-2">Dashboard</h1>
+              <p className="text-[#64748B] text-lg">Welcome back! Here's your business overview.</p>
             </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <Calendar className="w-4 h-4" />
-              <span>{new Date().toLocaleDateString('en-IN', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}</span>
+            <div className="flex items-center space-x-3 px-4 py-2.5 bg-white rounded-xl border border-[#E2E8F0] shadow-sm">
+              <Calendar className="w-5 h-5 text-[#3B82F6]" />
+              <span className="text-sm font-medium text-[#64748B]">
+                {new Date().toLocaleDateString('en-IN', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </span>
             </div>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
           {cards.map((card, idx) => {
             const IconComponent = card.icon;
             return (
-              <div key={idx} className="relative group">
-                <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-xl hover:bg-white/80 transition-all duration-300 hover:border-white/40">
-                  <div className="flex items-start justify-between mb-6">
-                    <div className={`p-4 rounded-xl bg-gradient-to-r ${card.lightGradient} shadow-sm`}>
-                      <IconComponent className="w-6 h-6 text-gray-700" />
-                    </div>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${card.gradient} animate-pulse`}></div>
-                    </div>
+              <div 
+                key={idx} 
+                className="group relative bg-white rounded-2xl border border-[#E2E8F0] p-6 hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 hover:border-[#CBD5E1]"
+              >
+                <div className="flex items-start justify-between mb-5">
+                  <div 
+                    className="p-3 rounded-xl transition-transform duration-300 group-hover:scale-110"
+                    style={{ backgroundColor: card.bgColor }}
+                  >
+                    <IconComponent 
+                      className="w-6 h-6" 
+                      style={{ color: card.color }}
+                    />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider leading-tight">
-                      {card.title}
-                    </h3>
-                    {loading ? (
-                      <div className="animate-pulse">
-                        <div className="h-9 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg w-24"></div>
-                      </div>
-                    ) : (
-                      <p className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-900 bg-clip-text text-transparent">
-                        {typeof card.value === 'string' && card.value.includes('₹') 
-                          ? card.value 
-                          : formatNumber(card.value)}
-                      </p>
-                    )}
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div 
+                      className="w-2 h-2 rounded-full animate-pulse"
+                      style={{ backgroundColor: card.color }}
+                    ></div>
                   </div>
-
-                  {/* Subtle animated gradient overlay */}
-                  <div className={`absolute inset-0 bg-gradient-to-r ${card.gradient} opacity-0 group-hover:opacity-5 rounded-2xl transition-all duration-300`}></div>
                 </div>
+                
+                <div className="space-y-2">
+                  <h3 className="text-xs font-semibold text-[#64748B] uppercase tracking-wide">
+                    {card.title}
+                  </h3>
+                  {loading ? (
+                    <div className="animate-pulse">
+                      <div className="h-8 bg-[#F1F5F9] rounded-lg w-24"></div>
+                    </div>
+                  ) : (
+                    <p className="text-3xl font-bold text-[#1E293B]">
+                      {typeof card.value === 'string' && card.value.includes('₹') 
+                        ? card.value 
+                        : formatNumber(card.value)}
+                    </p>
+                  )}
+                </div>
+
+                {/* Hover effect border */}
+                <div 
+                  className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                  style={{ 
+                    boxShadow: `0 0 0 2px ${card.color}15`
+                  }}
+                ></div>
               </div>
             );
           })}
         </div>
 
         {/* Quick Actions Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="space-y-6">
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8">
-              <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full mr-3"></div>
-                Quick Actions
-              </h3>
+        {(user?.role === "admin" || user?.role === "manager") && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Quick Actions Card */}
+            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-8 shadow-sm">
+              <div className="flex items-center mb-6">
+                <div className="w-1 h-7 bg-gradient-to-b from-[#3B82F6] to-[#6366F1] rounded-full mr-3"></div>
+                <h3 className="text-2xl font-bold text-[#1E293B]">Quick Actions</h3>
+              </div>
+              
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <a 
                   href="/customers"
-                  className="group p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-all duration-300 flex items-center space-x-3 border border-blue-200 hover:border-blue-300 hover:shadow-md"
+                  className="group relative p-5 rounded-xl bg-[#F7F9FC] hover:bg-white border border-[#E2E8F0] hover:border-[#3B82F6] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(59,130,246,0.15)]"
                 >
-                  <div className="p-2 rounded-lg bg-white shadow-sm group-hover:shadow-md transition-shadow">
-                    <Users className="w-5 h-5 text-blue-600" />
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-2.5 rounded-lg bg-white border border-[#E2E8F0] group-hover:border-[#3B82F6] transition-colors">
+                      <Users className="w-5 h-5 text-[#3B82F6]" />
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-[#64748B] group-hover:text-[#3B82F6] transition-colors" />
                   </div>
-                  <span className="font-medium text-blue-800">Manage Customers</span>
+                  <span className="font-semibold text-[#1E293B] group-hover:text-[#3B82F6] transition-colors">
+                    Manage Customers
+                  </span>
                 </a>
                 
                 <a 
                   href="/campaigns"
-                  className="group p-4 rounded-xl bg-gradient-to-r from-green-50 to-emerald-100 hover:from-green-100 hover:to-emerald-200 transition-all duration-300 flex items-center space-x-3 border border-green-200 hover:border-green-300 hover:shadow-md"
+                  className="group relative p-5 rounded-xl bg-[#F7F9FC] hover:bg-white border border-[#E2E8F0] hover:border-[#22C55E] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(34,197,94,0.15)]"
                 >
-                  <div className="p-2 rounded-lg bg-white shadow-sm group-hover:shadow-md transition-shadow">
-                    <Megaphone className="w-5 h-5 text-green-600" />
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-2.5 rounded-lg bg-white border border-[#E2E8F0] group-hover:border-[#22C55E] transition-colors">
+                      <Megaphone className="w-5 h-5 text-[#22C55E]" />
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-[#64748B] group-hover:text-[#22C55E] transition-colors" />
                   </div>
-                  <span className="font-medium text-green-800">Create Campaign</span>
+                  <span className="font-semibold text-[#1E293B] group-hover:text-[#22C55E] transition-colors">
+                    Create Campaign
+                  </span>
                 </a>
                 
                 <a 
                   href="/orders"
-                  className="group p-4 rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all duration-300 flex items-center space-x-3 border border-purple-200 hover:border-purple-300 hover:shadow-md"
+                  className="group relative p-5 rounded-xl bg-[#F7F9FC] hover:bg-white border border-[#E2E8F0] hover:border-[#6366F1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(99,102,241,0.15)]"
                 >
-                  <div className="p-2 rounded-lg bg-white shadow-sm group-hover:shadow-md transition-shadow">
-                    <ShoppingCart className="w-5 h-5 text-purple-600" />
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-2.5 rounded-lg bg-white border border-[#E2E8F0] group-hover:border-[#6366F1] transition-colors">
+                      <ShoppingCart className="w-5 h-5 text-[#6366F1]" />
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-[#64748B] group-hover:text-[#6366F1] transition-colors" />
                   </div>
-                  <span className="font-medium text-purple-800">View Orders</span>
+                  <span className="font-semibold text-[#1E293B] group-hover:text-[#6366F1] transition-colors">
+                    View Orders
+                  </span>
                 </a>
+
+                <a
+                  href='/team'
+                  className="group relative p-5 rounded-xl bg-[#F7F9FC] hover:bg-white border border-[#E2E8F0] hover:border-[#F59E0B] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(245,158,11,0.15)]"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-2.5 rounded-lg bg-white border border-[#E2E8F0] group-hover:border-[#F59E0B] transition-colors">
+                      <Activity className="w-5 h-5 text-[#F59E0B]" />
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-[#64748B] group-hover:text-[#F59E0B] transition-colors" />
+                  </div>
+                  <span className="font-semibold text-[#1E293B] group-hover:text-[#F59E0B] transition-colors">
+                    Manage Team
+                  </span>
+                </a>
+              </div>
+            </div>
+
+            {/* Business Insights Card */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#3B82F6] via-[#6366F1] to-[#8B5CF6] rounded-2xl p-8 text-white shadow-[0_0_24px_rgba(59,130,246,0.3)]">
+              <div className="relative z-10 h-full flex flex-col justify-between">
+                <div>
+                  <h3 className="text-3xl font-bold mb-4">Business Insights</h3>
+                  <p className="text-blue-50 text-lg mb-8 leading-relaxed max-w-md">
+                    Unlock powerful analytics and comprehensive insights to drive your business growth with data-driven decisions.
+                  </p>
+                </div>
                 
                 <a 
-                  href="/campaign-history"
-                  className="group p-4 rounded-xl bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 transition-all duration-300 flex items-center space-x-3 border border-orange-200 hover:border-orange-300 hover:shadow-md"
-                >
-                  <div className="p-2 rounded-lg bg-white shadow-sm group-hover:shadow-md transition-shadow">
-                    <MessageSquare className="w-5 h-5 text-orange-600" />
-                  </div>
-                  <span className="font-medium text-orange-800">View Messages</span>
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-8 text-white shadow-2xl h-full">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-              <div className="relative z-10">
-                <h3 className="text-2xl font-bold mb-3">Business Insights</h3>
-                <p className="text-indigo-100 mb-6 leading-relaxed">
-                  Get detailed analytics and insights about your business performance with our advanced reporting tools.
-                </p>
-                <a 
                   href="/reports"
-                  className="inline-flex items-center px-6 py-3 bg-white/20 hover:bg-white/30 rounded-xl font-semibold transition-all duration-300 backdrop-blur-sm border border-white/20 hover:border-white/40 hover:shadow-lg"
+                  className="inline-flex items-center justify-center px-6 py-3.5 bg-white text-[#3B82F6] rounded-xl font-semibold transition-all duration-300 hover:bg-blue-50 hover:shadow-lg group w-fit"
                 >
-                  View Detailed Reports
-                  <TrendingUp className="w-5 h-5 ml-2" />
+                  <span>View Detailed Reports</span>
+                  <TrendingUp className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </a>
               </div>
-              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/5 rounded-full"></div>
-              <div className="absolute -top-8 -right-8 w-24 h-24 bg-white/5 rounded-full"></div>
+              
+              {/* Decorative elements */}
+              <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/5 rounded-full blur-3xl"></div>
+              <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
+              <div className="absolute top-1/2 right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

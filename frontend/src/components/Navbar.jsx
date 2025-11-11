@@ -34,47 +34,48 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm sticky top-0 z-50">
+    <nav className="bg-secondary/80 backdrop-blur-lg border-b border-border-soft sticky top-0 z-50 shadow-soft">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo Section */}
           <div className="flex items-center">
             <Link 
               to={isLoggedIn ? '/home' : '/'} 
-              className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity group"
             >
               <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg">
+                <div className="w-10 h-10 bg-gradient-to-br from-accent to-accent-glow rounded-xl flex items-center justify-center shadow-glow">
                   <Building2 className="w-6 h-6 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white"></div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-success rounded-full border-2 border-secondary animate-pulse"></div>
               </div>
               <div className="flex flex-col">
-                <p className="text-xl font-bold text-gray-900 tracking-tight">CRM Pro</p>
-                
+                <p className="text-xl font-bold bg-gradient-to-r from-text-primary to-accent bg-clip-text text-transparent">
+                  CRM Pro
+                </p>
               </div>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
           {isLoggedIn && (
-            <div className="hidden md:flex items-center space-x-1">
+            <div className="hidden md:flex items-center space-x-2">
               {navigationItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`group relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`group relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                     isActive(item.path)
-                      ? 'bg-blue-50 text-blue-700 shadow-sm'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-elevated border border-accent text-accent shadow-glow'
+                      : 'text-text-secondary hover:bg-elevated hover:text-text-primary hover:border hover:border-border-soft'
                   }`}
                 >
                   <span className="flex items-center space-x-2">
-                    <span>{item.icon}</span>
+                    <span className="text-base group-hover:scale-110 transition-transform">{item.icon}</span>
                     <span>{item.label}</span>
                   </span>
                   {isActive(item.path) && (
-                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-blue-600 rounded-full"></div>
+                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-0.5 bg-gradient-to-r from-accent to-accent-glow rounded-full"></div>
                   )}
                 </Link>
               ))}
@@ -86,9 +87,9 @@ const Navbar = () => {
             <div className="hidden md:flex items-center">
               <button
                 onClick={handleLogout}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-500 to-red-600 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-sm"
+                className="group flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-danger to-red-600 rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-300"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-4 h-4 group-hover:rotate-12 transition-transform" />
                 <span>Logout</span>
               </button>
             </div>
@@ -99,7 +100,7 @@ const Navbar = () => {
             <div className="md:hidden">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                className="inline-flex items-center justify-center p-2 rounded-lg text-text-primary bg-elevated border border-border-soft hover:border-border-strong transition-all"
               >
                 {isMenuOpen ? (
                   <X className="h-6 w-6" />
@@ -114,17 +115,17 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {isLoggedIn && isMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-200">
-          <div className="px-4 pt-2 pb-3 space-y-1">
+        <div className="md:hidden bg-primary border-t border-border-soft">
+          <div className="px-4 pt-2 pb-3 space-y-2">
             {navigationItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsMenuOpen(false)}
-                className={`flex items-center space-x-3 px-3 py-3 rounded-lg text-base font-medium transition-colors ${
+                className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-300 ${
                   isActive(item.path)
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-elevated border border-accent text-accent shadow-glow'
+                    : 'text-text-secondary hover:bg-elevated hover:text-text-primary border border-transparent hover:border-border-soft'
                 }`}
               >
                 <span className="text-lg">{item.icon}</span>
@@ -132,13 +133,13 @@ const Navbar = () => {
               </Link>
             ))}
             
-            <div className="pt-4 mt-4 border-t border-gray-200">
+            <div className="pt-4 mt-4 border-t border-border-soft">
               <button
                 onClick={() => {
                   setIsMenuOpen(false);
                   handleLogout();
                 }}
-                className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-white bg-gradient-to-r from-red-500 to-red-600 rounded-lg font-medium hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-sm"
+                className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-white bg-gradient-to-r from-danger to-red-600 rounded-lg font-medium hover:shadow-lg transition-all duration-300"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Logout</span>

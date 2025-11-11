@@ -15,7 +15,9 @@ const AuthSuccess = () => {
   setTimeout(() => navigate('/home'), 100);
 }
  else {
-      navigate('/');
+      //display error and dont redirect
+      console.error('No access token found in URL');
+      
     }
   }, [setAccessToken, navigate]);
 

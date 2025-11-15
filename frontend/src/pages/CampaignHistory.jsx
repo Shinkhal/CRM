@@ -89,8 +89,6 @@ const CampaignHistory = () => {
       
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                   
-
-        {/* Filters and Search */}
         <div className="mb-6 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -117,7 +115,6 @@ const CampaignHistory = () => {
           </div>
         </div>
 
-        {/* Stats Overview */}
        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-10">
   {[
     {
@@ -153,10 +150,6 @@ const CampaignHistory = () => {
     </div>
   ))}
 </div>
-
-
-        
-        
         {loading ? (
           <div className="bg-white/60 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 flex justify-center items-center p-16">
             <div className="flex space-x-2">
@@ -255,7 +248,6 @@ const CampaignHistory = () => {
                     </div>
                   </div>
                   
-                  {/* Stats Grid */}
                   <div className="p-6 pt-2">
                     <div className="grid grid-cols-2 gap-4 mb-6">
                       <div className="text-center p-3 bg-emerald-50/80 rounded-xl">

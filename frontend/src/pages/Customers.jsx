@@ -30,7 +30,6 @@ const Customers = () => {
     }
   }, [user, accessToken]);
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user || !accessToken) return toast.error('User not authenticated');
@@ -51,18 +50,15 @@ const Customers = () => {
     }
   };
 
-  // Input change handler
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Fetch customers on mount or when user changes
   useEffect(() => {
     if (user && accessToken) fetchCustomers();
   }, [user, accessToken, fetchCustomers]);
 
-  // Role check: only admin or manager can add
   const canAddCustomer = user?.role === 'admin' || user?.role === 'manager';
 
   return (
@@ -72,7 +68,6 @@ const Customers = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Customer Management</h1>
 
-        {/* Add Customer Form */}
         {canAddCustomer && (
           <div className="bg-white shadow-sm rounded-lg p-8 mb-10 border border-gray-100">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">Add New Customer</h2>
@@ -126,7 +121,6 @@ const Customers = () => {
           </div>
         )}
 
-        {/* Customer List */}
         <div className="bg-white shadow-sm rounded-lg p-8 border border-gray-100">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-semibold text-gray-800">Customer List</h3>

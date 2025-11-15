@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 const AuthSuccess = () => {
   const navigate = useNavigate();
-  const { setAccessToken } = useAuth(); // get from context
+  const { setAccessToken } = useAuth(); 
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -15,7 +15,6 @@ const AuthSuccess = () => {
   setTimeout(() => navigate('/home'), 100);
 }
  else {
-      //display error and dont redirect
       console.error('No access token found in URL');
       
     }

@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import { getUserIdFromToken } from '../utils/getUser';
 import { useAuth } from '../context/AuthContext';
 
-// Move RuleBlock component outside to prevent re-renders
 const RuleBlock = ({ block, index, onChange, onRemove }) => (
   <div className="flex gap-2 items-center">
     <select

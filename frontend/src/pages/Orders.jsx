@@ -7,7 +7,7 @@ import { useUser } from '../context/UserContext';
 
 const Orders = () => {
   const { accessToken } = useAuth();
-  const { user } = useUser(); // get user details from context
+  const { user } = useUser(); 
   const [customers, setCustomers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);

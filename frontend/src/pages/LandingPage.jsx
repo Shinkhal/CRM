@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
+import Snowfall from 'react-snowfall';
 
 const Landing = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -18,15 +19,11 @@ const Landing = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <div className="min-h-screen bg-gradient-to-br from-primary via-secondary to-primary relative overflow-hidden flex flex-col justify-center items-center px-4 text-center pt-20">
-        {/* Animated background effects */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-glow/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        </div>
+      <div className="min-h-100 bg-gradient-to-br from-accent-glow to-secondary relative overflow-hidden flex flex-col justify-center items-center px-4 text-center pt-20 pb-20">
+      <Snowfall  />
 
         <div className={`relative z-10 max-w-4xl transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight bg-gradient-to-r from-text-primary via-accent to-accent-glow bg-clip-text text-transparent">
+          <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight bg-text-primary bg-clip-text text-transparent">
             Welcome to Mini CRM 🚀
           </h1>
           

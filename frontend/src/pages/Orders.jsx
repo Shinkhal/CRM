@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import axios from '../api/axios';
-import Navbar from '../components/Navbar';
 import { toast } from 'react-toastify';
-import { useAuth } from '../context/AuthContext';
-import { useUser } from '../context/UserContext';
+import { useAuth } from '../context/authContext.js';
+import { useUser } from '../context/userContext.js';
+import { listOf } from '../api/collections';
 
 const Orders = () => {
   const { accessToken } = useAuth();
@@ -23,8 +23,8 @@ const Orders = () => {
         axios.get('/customers', { headers: { Authorization: `Bearer ${accessToken}` } }),
         axios.get('/orders', { headers: { Authorization: `Bearer ${accessToken}` } }),
       ]);
-      setCustomers(customerRes.data);
-      setOrders(orderRes.data);
+      setCustomers(listOf(customerRes.data, 'customers'));
+      setOrders(listOf(orderRes.data, 'orders'));
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load data. Please try again.');
@@ -71,11 +71,8 @@ const Orders = () => {
   const canCreateOrder = user?.role === 'admin' || user?.role === 'manager';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Order Management</h1>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Order Management</h1>
 
         {/* Create Order Form */}
         {canCreateOrder && (
@@ -182,7 +179,6 @@ const Orders = () => {
           )}
         </div>
       </div>
-    </div>
   );
 };
 

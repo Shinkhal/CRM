@@ -2,9 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import axios from "../api/axios";
-import { useUser } from "../context/UserContext";
-import { useAuth } from "../context/AuthContext";
-import Navbar from "../components/Navbar";
+import { useUser } from "../context/userContext.js";
+import { useAuth } from "../context/authContext.js";
 
 const Teams = () => {
   const { user } = useUser();
@@ -44,18 +43,18 @@ const Teams = () => {
 
   // ✅ Remove member
   const handleRemove = async (userId) => {
-    if (!window.confirm("Are you sure you want to remove this team member?")) {
+    if (!window.confirm("Are you sure you want to deactivate and remove this team member?")) {
       return;
     }
     try {
       await axios.delete(`/business/team/${userId}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      toast.success("Member removed");
+      toast.success("Member removed and access revoked");
       fetchTeam();
     } catch (err) {
       console.error("Remove member error:", err);
-      toast.error("Failed to remove member");
+      toast.error(err.response?.data?.message || "Failed to remove member");
     }
   };
 
@@ -72,6 +71,41 @@ const Teams = () => {
     } catch (err) {
       console.error("Change role error:", err);
       toast.error("Failed to update role");
+    }
+  };
+
+  // ✅ Change status (active, suspended, deactivated)
+  const handleStatusChange = async (userId, newStatus) => {
+    try {
+      await axios.put(
+        `/business/team/${userId}/status`,
+        { status: newStatus },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      toast.success(`Member status updated to ${newStatus}`);
+      fetchTeam();
+    } catch (err) {
+      console.error("Change status error:", err);
+      toast.error(err.response?.data?.message || "Failed to update member status");
+    }
+  };
+
+  const getUserData = (member) => {
+    if (!member) return {};
+    if (Array.isArray(member.user)) return member.user[0] || {};
+    return member.user || {};
+  };
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'active':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'suspended':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'deactivated':
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+      default:
+        return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
 
@@ -123,10 +157,7 @@ const Teams = () => {
   }
 
   return (
-    <main>
-      <Navbar />
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -197,9 +228,9 @@ const Teams = () => {
                 </div>
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500">Administrators</p>
+                <p className="text-sm font-medium text-gray-500">Active Members</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {team.filter(member => member.user.role?.toLowerCase() === 'admin').length}
+                  {team.filter(m => (m.status || getUserData(m).status || 'active') === 'active').length}
                 </p>
               </div>
             </div>
@@ -212,74 +243,118 @@ const Teams = () => {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
                 <h2 className="text-lg font-semibold text-gray-900">Team Members</h2>
-                <p className="text-sm text-gray-600 mt-1">Manage roles and permissions for your team</p>
+                <p className="text-sm text-gray-600 mt-1">Manage single-organization membership, roles, and access status</p>
               </div>
               
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Member</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-         <tbody className="bg-white divide-y divide-gray-200">
-  {team.map((member) => (
-    <tr key={member._id}>
-      {/* Name */}
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-        {member.user[0]?.name || 'N/A'}
-      </td>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {team.map((member) => {
+                      const memberUser = getUserData(member);
+                      const memberId = memberUser._id || member._id;
+                      const memberStatus = member.status || memberUser.status || 'active';
+                      const isCurrentUser = memberId === (user?.id || user?._id);
+                      const isAdmin = user?.role === 'admin';
 
-      {/* Email */}
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {member.user[0]?.email || 'N/A'}
-      </td>
+                      return (
+                        <tr key={memberId} className="hover:bg-gray-50/70 transition-colors">
+                          {/* Employee Info */}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                                {(memberUser.name || memberUser.email || 'U').charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
+                                  {memberUser.name || 'Unnamed Employee'}
+                                  {isCurrentUser && (
+                                    <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-normal">You</span>
+                                  )}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {memberUser.email || 'N/A'}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
 
-      {/* Role Dropdown */}
-      <td className="px-6 py-4 whitespace-nowrap">
-        <select
-          value={member.role} // role is at top-level
-          onChange={(e) => handleChangeRole(member.user[0]?._id, e.target.value)}
-          className="text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="admin">Admin</option>
-          <option value="manager">Manager</option>
-          <option value="viewer">Viewer</option>
-        </select>
-      </td>
+                          {/* Role Dropdown */}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <select
+                              value={member.role || memberUser.role || 'viewer'}
+                              disabled={!isAdmin || isCurrentUser}
+                              onChange={(e) => handleChangeRole(memberId, e.target.value)}
+                              className={`text-xs font-medium rounded-lg border border-gray-300 py-1.5 px-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                                !isAdmin || isCurrentUser ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white text-gray-800'
+                              }`}
+                            >
+                              <option value="admin">Admin</option>
+                              <option value="manager">Manager</option>
+                              <option value="viewer">Viewer</option>
+                            </select>
+                          </td>
 
-      {/* Actions */}
-      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-        <div className="flex items-center justify-end space-x-2">
-          <button
-            onClick={() => handleRemove(member.user[0]?._id)}
-            className="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-          >
-            <svg
-              className="w-3 h-3 mr-1"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
-            Remove
-          </button>
-        </div>
-      </td>
-    </tr>
-  ))}
-</tbody>
+                          {/* Status Badge & Control */}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {isAdmin && !isCurrentUser ? (
+                              <select
+                                value={memberStatus}
+                                onChange={(e) => handleStatusChange(memberId, e.target.value)}
+                                className={`text-xs font-semibold rounded-lg border py-1.5 px-2.5 capitalize focus:ring-2 focus:ring-blue-500 ${getStatusBadge(memberStatus)}`}
+                              >
+                                <option value="active">Active</option>
+                                <option value="suspended">Suspended</option>
+                                <option value="deactivated">Deactivated</option>
+                              </select>
+                            ) : (
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border capitalize ${getStatusBadge(memberStatus)}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                                  memberStatus === 'active' ? 'bg-emerald-500' : memberStatus === 'suspended' ? 'bg-amber-500' : 'bg-rose-500'
+                                }`}></span>
+                                {memberStatus}
+                              </span>
+                            )}
+                          </td>
 
-
-
+                          {/* Actions */}
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex items-center justify-end space-x-2">
+                              {isAdmin && !isCurrentUser && (
+                                <button
+                                  onClick={() => handleRemove(memberId)}
+                                  className="inline-flex items-center px-2.5 py-1.5 border border-red-200 text-xs font-medium rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                                  title="Revoke access and deactivate"
+                                >
+                                  <svg
+                                    className="w-3.5 h-3.5 mr-1"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                    />
+                                  </svg>
+                                  Revoke
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
                 </table>
               </div>
             </div>
@@ -363,8 +438,6 @@ const Teams = () => {
           </div>
         </div>
       </div>
-    </div>
-                  </main> 
   );
 };
 

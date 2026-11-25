@@ -1,240 +1,281 @@
 ![Node.js](https://img.shields.io/badge/Node.js-339933?logo=node.js\&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-4ea94b?logo=mongodb\&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis\&logoColor=white)
-![Vercel](https://img.shields.io/badge/Vercel-Deployed-black?logo=vercel)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react\&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript\&logoColor=white)
 
-# 🧠 Mini CRM
+# 🧠 Nexus CRM — Modular Multi-Tenant CRM Platform
 
-A full-stack CRM platform designed to empower marketing teams with smart campaign management, team collaboration, customer insights, and AI-powered business intelligence.
+A full-stack, multi-tenant CRM built with Node.js + Express + TypeScript + MongoDB
+and a React 19 + Vite + Tailwind v4 frontend. It ships a data-driven sales pipeline,
+lead lifecycle with automatic scoring, a field-level audit trail, marketing campaigns
+with templates and one-click unsubscribe, and a Gemini-powered insights layer.
 
----
-
-## ✨ Key Features
-
-* Customer & order management with automatic stats
-* Campaign builder with real-time audience preview
-* AI-powered segmentation and messaging
-* Team roles using **Role-Based Access (RBA)**
-* Business owner can invite **managers, analysts, viewers**
-* Message delivery via **SMTP** & **WhatsApp**
-* Business growth **insight generator** using **Google Gemini AI**
-* Secure, scalable authentication using **HTTP-only cookies + Redis session store**
-* Fully responsive, modern UI with Tailwind CSS
+The domain model was designed against a benchmark of Zoho CRM, HubSpot CRM and
+Frappe CRM — see **[docs/crm_benchmark.md](docs/crm_benchmark.md)** for the
+comparison, the feature gap analysis, and the roadmap.
 
 ---
 
-## 📸 Screenshots
+See [production hardening and deployment notes](docs/production-hardening.md) for the authentication/session migration, persisted campaign delivery, and isolated regression commands.
 
-![image](https://github.com/user-attachments/assets/f0335666-55d8-45ec-ad39-97aa57293e5a)
-![image](https://github.com/user-attachments/assets/1d5fa81b-f312-4131-b788-ddb15a5a45e9)
-![image](https://github.com/user-attachments/assets/71710727-a45b-4690-be5e-9a436d2cbb7a)
+## 📚 Documentation
 
----
-
-## 🚀 Core Modules
-
-### 👥 Customer Management
-
-* Add, update, and view customer profiles
-* Tracks `totalSpend`, `totalOrders`, `lastOrderDate` automatically
-
-### 🛒 Order Management
-
-* Orders linked to customers
-* Auto-updates related customer stats instantly
-
-### 📣 Campaign Builder
-
-* Input campaign name, message, and segmentation rules
-* Uses **Google Gemini AI** to:
-
-  * Convert natural language → MongoDB query
-  * Suggest short, engaging messaging
-
-### 👁️ Audience Preview
-
-* Real-time filtered list of customers matching rules
-
-### ✉️ Messaging Delivery
-
-* Supports:
-
-  * **📧 Email** (SMTP)
-  * **📱 WhatsApp API**
-* Logs everything:
-
-  * Message status (SENT/FAILED)
-  * Vendor response
-  * Timestamp
-
-### 📊 Campaign History & Logs
-
-* Full log history for each campaign
-* Transparency for debugging and delivery monitoring
-
-### 📈 Business Insights
-
-* Route: `/reports`
-* AI-powered business improvement tips via:
-
-  * `/api/dashboard/insights`
-* Helps improve conversions and retention
-
-### 🔐 Authentication
-
-* **Google OAuth 2.0** (Passport.js)
-* **HTTP-only cookies**
-
-  * Safer against XSS
-  * Fully managed server-side
-* **Redis session store**
-
-  * Faster
-  * Scalable
-* Role-based access protection
-* Frontend route protection using Context API
+| Document | Contents |
+|---|---|
+| **[docs/crm_benchmark.md](docs/crm_benchmark.md)** | Zoho vs HubSpot vs Frappe vs Nexus: capability matrix, what was implemented this cycle, the defects that were found and fixed, and the prioritised roadmap |
+| **[docs/system_design.md](docs/system_design.md)** | Multi-tenant architecture, ER model, MongoDB schema, Redis caching, RBAC, security |
+| **[docs/features_and_userflows.md](docs/features_and_userflows.md)** | Feature catalog and end-to-end user flows |
+| **[docs/walkthrough.md](docs/walkthrough.md)** | Guided walkthrough of the product surface |
+| **[docs/backend_review.md](docs/backend_review.md)** | Senior engineering review of the backend: the critical defects that were found, what was fixed, and what is still open |
 
 ---
 
-## 🧑‍🤝‍🧑 Role-Based Access (RBA)
+## ✨ Core Capabilities
 
-Now includes team roles:
+### 🎯 Data-driven sales pipeline
+* Pipeline stages live in the database, not in code. Rename them, reorder them, and
+  set the win probability that drives the forecast — exactly like Zoho's "multiple
+  sales pipelines" and Frappe's `CRM Deal Status` doctype.
+* Stage probability **drives** the weighted forecast; moving a deal to a lost stage
+  resets it to 0 and a won stage stamps the close date.
+* A lost deal **requires** a reason, and the loss analytics are rendered on the board.
+* Drag and drop between columns, plus per-owner pipeline rollups.
+* **Forecast view** buckets open pipeline by expected close period, monthly or quarterly.
 
-* 👑 **Owner** — full control, invites members
-* 🔧 **Manager** — can manage customers, orders, and campaigns
-* 👁️ **Viewer** — read-only dashboard and analytics
+### ⚡ Workflow automation
+* When something happens, do something. A workflow watches for a domain event,
+  checks a condition, and runs a list of actions.
+* **Fifteen events** across deals, contacts, tasks, notes and campaigns:
+  `deal.stage_changed`, `deal.won`, `customer.converted`, `task.overdue`,
+  `campaign.sent` and more.
+* **Conditions use a small expression language, not `eval`.** A recursive descent
+  parser produces an AST and an evaluator walks it; prototype access is refused.
+  ```
+  doc.value >= 50000 && doc.stage == 'negotiation'
+  doc.lostReason in ['Pricing', 'Competitor Won']
+  ```
+* **Ten actions**: create a task, update the record, send an email, send a
+  notification, assign the record, adjust the lead score, set the lead
+  temperature, create a deal, add a note, and **wait**.
+* **Wait steps make real sequences.** A run parked on a wait resumes from the
+  database, so a restart does not lose the sequence.
+* **Every run is recorded** with the trigger context and the per-step outcome,
+  so a failed automation can be inspected rather than guessed at.
+* **Five starter workflows** ship with a new workspace, based on the reference
+  flows in Frappe CRM. They are created **disabled** — a workflow that sends
+  mail should be a deliberate choice.
+* In-app notifications with a bell in the header.
 
-### Access is controlled at:
+### 🔥 Lead lifecycle and scoring
+* Every contact starts as a lead: `lead → contacted → qualified → customer → churned`.
+* Score (0-100) and band (cold / warm / hot) are recalculated from business email,
+  linked company, order count and lifetime spend — on every write.
+* One-click conversion from lead to paying customer.
 
-* Backend middleware
-* Session validation
-* Frontend routing
-* UI visibility rules
+### 🗂️ Field-level audit trail
+* Every create, update and delete on a deal, contact, account, task, note or campaign
+  is recorded with a before/after field diff, the actor, role, IP and user agent.
+* The deal drawer timeline merges notes, stage transitions, linked tasks and audit
+  entries into one chronological feed.
+
+### 📣 Marketing campaigns that actually target
+* Segment rules use a closed, vendor-neutral DSL: `{ "totalSpend": { "gte": 5000 } }`.
+  No raw Mongo operators ever reach the request body, so the NoSQL-injection
+  sanitiser can stay strict *and* segmentation keeps working.
+* Server-side audience preview, so the preview and the launch use the same query.
+* Reusable **email templates** with `{{name}}`, `{{company}}`, `{{totalSpend}}` style
+  personalisation.
+* Every send carries a `List-Unsubscribe` header and a **signed one-click unsubscribe
+  link**. Suppressed recipients are logged as `SKIPPED`, never mailed.
+
+### 🏛️ B2B accounts and contact linkage
+* Accounts with industry, headcount, revenue and address.
+* Contacts link to accounts, and account pages roll up contact count, deal count and
+  pipeline value.
+
+### ✅ Tasks, notes and activity
+* Tasks with status, priority, due date, assignee and links to both a contact and a
+  deal. Filtering by `dealId` / `customerId` works.
+* Notes with pinning, merged into the same activity timeline as the audit trail.
+
+### ⚙️ Custom fields engine
+* Admins define fields on deals, contacts and accounts at runtime; the definitions
+  are stored as data and rendered on the deal form and drawer.
+
+### 🧩 Module marketplace
+* Feature toggles per workspace, enforced in the sidebar, the home launchpad and the
+  navigation palette.
+
+### 🔐 Authentication and access
+* Email/password with **argon2id**, Google OAuth 2.0, and a one-click demo sandbox.
+* Access token (15 min) + refresh token in an httpOnly cookie (7 days).
+* Three roles — `admin`, `manager`, `viewer` — enforced on every route.
+* `/auth/demo-login` is **blocked in production** unless `ALLOW_DEMO_LOGIN` is set.
 
 ---
 
-## 💡 AI-Powered Tools (Google Gemini)
+## 🧑‍🤝‍🤝 Roles
 
-| Feature                   | Description                          |
-| ------------------------- | ------------------------------------ |
-| Prompt → Mongo filter     | Converts natural rules to DB queries |
-| Segment goal → Message    | Suggests strong marketing messages   |
-| Dashboard Tips & Insights | Personalized business intelligence   |
+| Role | Capabilities |
+|---|---|
+| `admin` | Full control: manage modules, custom fields, pipeline stages, team, campaigns, delete records, AI reports |
+| `manager` | Manage contacts, accounts, deals, tasks, campaigns, notes; create pipeline stages |
+| `viewer` | Read-only across the workspace, plus viewing reports and dashboards |
 
----
-
-## ✅ Feature Checklist
-
-| Feature                              | Status |
-| ------------------------------------ | ------ |
-| Customer ingestion                   | ✅      |
-| Order ingestion + stats update       | ✅      |
-| Campaign creation + audience preview | ✅      |
-| SMTP email delivery                  | ✅      |
-| WhatsApp message integration         | ✅      |
-| Per-campaign delivery logs           | ✅      |
-| AI prompt → MongoDB query            | ✅      |
-| AI message generator                 | ✅      |
-| AI-powered growth tips               | ✅      |
-| Google OAuth 2.0 login               | ✅      |
-| Redis-based session storage          | ✅      |
-| HTTP-only cookie authentication      | ✅      |
-| Role-Based Access (RBA)              | ✅      |
-| Team member invitations              | ✅      |
-| Responsive Tailwind UI               | ✅      |
-| Dashboard overview with stats        | ✅      |
+> There is no `owner` role. `Business.owner` is a field that points at the admin who
+> created the workspace.
 
 ---
 
-## 🧪 Technologies Used
+## 🛠️ Stack
 
-| Layer       | Stack                                    |
-| ----------- | ---------------------------------------- |
-| Frontend    | React (Vite), Tailwind CSS, React Router |
-| Backend     | Node.js, Express, Mongoose (MongoDB)     |
-| AI Services | Google Gemini AI                         |
-| Messaging   | Nodemailer (SMTP), WhatsApp API          |
-| Auth        | Google OAuth 2.0, Passport.js, JWT       |
-| State Mgmt  | React Context API                        |
-| Session     | Redis + connect-redis                    |
-| UX Tools    | Toastify, Lucide Icons                   |
+| Layer | Stack |
+|---|---|
+| Frontend | React 19, Vite 6, Tailwind CSS v4, React Router 7, lucide-react, react-toastify |
+| Backend | Node.js, Express 5, TypeScript 6, Mongoose 8, MongoDB, Redis (Upstash / ioredis) |
+| AI | Google Gemini (`gemini-3.8-flash`, with a model fallback chain) |
+| Messaging | Nodemailer (SMTP), WhatsApp API variables reserved |
+| Auth | argon2id, jsonwebtoken, Passport.js (Google OAuth 2.0) |
+| Session | connect-redis with an in-memory fallback |
+| Logging | Winston (console + rotating files) |
 
 ---
 
-## 🗂️ Folder Structure
+## 🗂️ Structure
 
-```
+```text
 /backend
-├── config/        
-├── controllers/
-├── models/
-├── routes/
-├── middleware/
-├── services/      
-└── server.js
+├── config/         db, redis, session, passport, cors, env (zod validated)
+├── controllers/    one per resource, plus pipeline, audit, search, email template,
+│                   workflow, notification
+├── middleware/     auth (protect / authorize), rate limit, security
+├── models/         mongoose schemas (tenant scoped)
+├── routes/         express routers
+├── services/       pipeline, campaign email, AI, email sender, workflow engine
+├── utils/          pagination, segment rules, audit, migrations, logger, health
+├── types/          shared types
+├── tests/          end-to-end smoke tests against a running server
+└── server.ts
 
 /frontend
-├── pages/
-├── components/
-├── routes/
-├── context/
-├── api/
-└── App.jsx / main.jsx
+├── api/            axios instances + collection helpers
+├── components/     AppLayout, Sidebar, TopHeader, drawers, modals, ui kit
+├── context/        AuthContext, UserContext
+├── hooks/          usePipeline (stages from the API)
+├── pages/          20 routed pages
+├── routes/         PrivateRoute, AdminRoute
+└── styles/
 ```
 
 ---
 
-## 🧑‍💻 Local Setup
+## 🧪 Local setup
 
-### 🔧 Backend
+### Backend
 
 ```bash
 cd backend
 npm install
+cp .env.example .env   # or create .env from the table below
 npm run dev
 ```
 
-`.env` configuration:
+Required environment variables (validated by zod at boot — the process refuses to
+start with an invalid configuration):
 
 ```env
 PORT=5000
-MONGODB_URI=your_mongodb_uri
-JWT_SECRET=your_jwt_secret
+NODE_ENV=development
+MONGODB_URI=mongodb+srv://...
+MONGODB_DB_NAME=xeno-crm
+REDIS_URL=redis://...
 CLIENT_URL=http://localhost:5173
-
-# Redis
-REDIS_URL=redis://localhost:6379
-
-# Google AI
-GOOGLE_GEMINI_API_KEY=your_gemini_key
-
-# Google OAuth
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_secret
-
-# SMTP
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USER=email@example.com
-SMTP_PASS=your_password
-
-# WhatsApp API
-WHATSAPP_API_URL=https://api.example.com/send
-WHATSAPP_API_KEY=your_key
+SERVER_URL=http://localhost:5000
+ALLOWED_ORIGINS=http://localhost:5173
+SESSION_SECRET=...          # at least 32 characters, and all three
+JWT_SECRET=...               # signing secrets must differ from
+REFRESH_TOKEN_SECRET=...     # each other
+SESSION_COOKIE_NAME=crm.sid
+SESSION_TTL_HOURS=24
+TRUST_PROXY=0                # only enable behind a reverse proxy
+BODY_LIMIT=1mb
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_GLOBAL_MAX=1500
+RATE_LIMIT_AUTH_MAX=200
+RATE_LIMIT_AI_MAX=300
 ```
 
----
+Optional:
 
-### 💻 Frontend
+```env
+GOOGLE_GEMINI_API_KEY=...    # AI segmentation, message generation, growth insights
+GEMINI_MODEL=gemini-3.8-flash
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+SMTP_HOST=...
+SMTP_PORT=587
+SMTP_USER=...
+SMTP_PASS=...
+SMTP_FROM=...
+WHATSAPP_API_URL=...         # reserved, not wired up yet
+WHATSAPP_API_KEY=...         # reserved, not wired up yet
+ALLOW_DEMO_LOGIN=            # only ever set this outside production
+```
+
+### Frontend
 
 ```bash
 cd frontend
 npm install
+cp .env.example .env
 npm run dev
 ```
 
-Access frontend at:
+```env
+VITE_BACKEND_URL=http://localhost:5000
+```
+
 ➡️ [http://localhost:5173](http://localhost:5173)
+
+### Verification
+
+```bash
+cd backend  && npm run typecheck   # tsc --noEmit in strict mode, zero errors
+cd backend  && npm run lint        # eslint, zero errors
+cd backend  && npm run test        # 115 assertions across 4 suites
+cd backend  && npm run typecheck:strict  # strict-mode readiness report
+cd frontend && npm run lint        # eslint, zero errors
+cd frontend && npm run build       # vite production build
+```
+
+The backend compiles with **TypeScript strict mode enabled**. `npm run
+typecheck:strict` checks the full backend with strict TypeScript settings. Lint reports remaining explicit `any` usage.
+
+The tests exercise the real API against the real database. Together they cover
+registration, pipeline stage derivation, stage validation, loss reasons, the
+aggregation-backed pipeline summary, the forecast, the audit trail, task
+filtering, campaign segmentation, lead conversion, global search, the
+authentication guards, and the whole workflow engine: trigger matching, trigger
+filters, conditions, per-step conditions, action execution, failure handling,
+wait steps, run-now, notifications and the enable/disable switch.
+
+---
+
+## 🧭 Known gaps
+
+Honest list of what is **not** built yet, tracked in the roadmap section of
+`docs/crm_benchmark.md`:
+
+* Multi-step branching in workflows (the engine branches only through a
+  per-step condition), re-enrolment rules, and a visual flow canvas
+* Custom objects, and custom fields on every entity
+* Record ownership scoping (`assignedTo` is not yet an access boundary)
+* Product catalogue, quotes, invoices, line items
+* Data import / export, saved views, field-level permissions, custom roles, i18n
+* WhatsApp / SMS / telephony delivery (the environment variables exist, the
+  integration does not)
+* File attachments
 
 ---
 
@@ -242,11 +283,8 @@ Access frontend at:
 
 **Shinkhal Sinha**
 
-
 ---
 
 ## 📝 License
 
 Open-source project for learning and portfolio demonstration.
-
-

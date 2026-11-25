@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../context/userContext.js';
 import { toast } from 'react-toastify';
-import Navbar from '../components/Navbar';
 
 const InviteMemberPage = () => {
   const { user } = useUser();
@@ -13,20 +12,21 @@ const InviteMemberPage = () => {
   const [pending, setPending] = useState([]);
   const [fetchingTeam, setFetchingTeam] = useState(true);
 
+  const fetchTeam = async () => {
+    setFetchingTeam(true);
+    try {
+      const res = await api.get('/business/team');
+      setTeam(res.data.users || []);
+      setPending(res.data.pendingInvites || []);
+    } catch (err) {
+      console.error('Error fetching team:', err);
+      toast.error('Failed to fetch team data');
+    } finally {
+      setFetchingTeam(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchTeam = async () => {
-      setFetchingTeam(true);
-      try {
-        const res = await api.get('/business/team');
-        setTeam(res.data.users || []);
-        setPending(res.data.pendingInvites || []);
-      } catch (err) {
-        console.error('Error fetching team:', err);
-        toast.error('Failed to fetch team data');
-      } finally {
-        setFetchingTeam(false);
-      }
-    };
     fetchTeam();
   }, []);
 
@@ -76,6 +76,7 @@ const InviteMemberPage = () => {
       toast.success(res.data.message || 'Invite sent successfully!');
       setEmail('');
       setRole('viewer');
+      fetchTeam();
     } catch (err) {
       console.error('Error sending invite:', err);
       toast.error(err.response?.data?.message || 'Failed to send invite');
@@ -104,9 +105,7 @@ const InviteMemberPage = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-primary)' }}>
-      <Navbar />
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Header with gradient accent */}
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-3">
@@ -497,9 +496,7 @@ const InviteMemberPage = () => {
             </div>
           </div>
         </div>
-
       </div>
-    </div>
   );
 }
 export default InviteMemberPage;

@@ -1,30 +1,8 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../context/authContext.js';
 
-const AuthSuccess = () => {
-  const navigate = useNavigate();
-  const { setAccessToken } = useAuth(); 
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const accessToken = params.get('accessToken');
-
-    if (accessToken) {
-  setAccessToken(accessToken);
-  setTimeout(() => navigate('/home'), 100);
+export default function AuthSuccess() {
+  const { accessToken, loading } = useAuth();
+  if (loading) return <div className="p-6 text-center">Signing you in...</div>;
+  return <Navigate to={accessToken ? '/home' : '/login?error=session_failed'} replace />;
 }
- else {
-      console.error('No access token found in URL');
-      
-    }
-  }, [setAccessToken, navigate]);
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-white text-gray-800 text-lg">
-      Logging you in...
-    </div>
-  );
-};
-
-export default AuthSuccess;

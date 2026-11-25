@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from '../api/axios';
-import Navbar from '../components/Navbar';
 import { BarChart3, TrendingUp, Users, MessageSquare, Calendar, Eye, RefreshCw, Plus, Filter, Search, Zap, Target, Activity } from 'lucide-react';
 
 const CampaignHistory = () => {
@@ -84,10 +83,7 @@ const CampaignHistory = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                   
         <div className="mb-6 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1 max-w-md">
@@ -249,14 +245,15 @@ const CampaignHistory = () => {
                   </div>
                   
                   <div className="p-6 pt-2">
+                    <p className="mb-3 text-sm text-slate-600">Status: {campaign.status?.replaceAll("_", " ")}</p>
                     <div className="grid grid-cols-2 gap-4 mb-6">
                       <div className="text-center p-3 bg-emerald-50/80 rounded-xl">
                         <div className="text-2xl font-bold text-emerald-700">{(campaign.sent || 0).toLocaleString()}</div>
-                        <div className="text-xs text-emerald-600 font-medium uppercase tracking-wide">Delivered</div>
+                        <div className="text-xs text-emerald-600 font-medium uppercase tracking-wide">Accepted</div>
                       </div>
                       <div className="text-center p-3 bg-red-50/80 rounded-xl">
-                        <div className="text-2xl font-bold text-red-700">{(campaign.failed || 0).toLocaleString()}</div>
-                        <div className="text-xs text-red-600 font-medium uppercase tracking-wide">Failed</div>
+                        <div className="text-2xl font-bold text-red-700">{((campaign.failed || 0) + (campaign.unknown || 0)).toLocaleString()}</div>
+                        <div className="text-xs text-red-600 font-medium uppercase tracking-wide">Failed / needs review</div>
                       </div>
                     </div>
                     
@@ -274,7 +271,6 @@ const CampaignHistory = () => {
           </div>
         )}
       </div>
-    </div>
   );
 };
 

@@ -1,0 +1,47 @@
+/* ==========================================================================
+   CENTRALIZED TYPOGRAPHY SYSTEM
+   Font: Plus Jakarta Sans (Headers & Body) + JetBrains Mono (Numeric & Code)
+   Loaded via <link> in index.html for zero render blocking & no @import order conflicts
+   ========================================================================== */
+
+:root {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Global Font Family Enforcement */
+html,
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings inherit the standard heading font without overriding Tailwind sizes */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+.font-sans,
+.font-body {
+  font-family: var(--font-sans);
+}
+
+/* Monospace & Tabular Number Alignment */
+.font-numeric,
+.font-mono,
+code,
+pre,
+kbd {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum' on, 'zero' on;
+  font-variant-numeric: tabular-nums;
+}

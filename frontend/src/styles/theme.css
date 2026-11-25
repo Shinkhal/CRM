@@ -1,0 +1,216 @@
+/* ==========================================================================
+   NEXUS CRM - MODERN ENTERPRISE DESIGN SYSTEM
+   Theme: Refined Modern SaaS (Clean Surfaces, Soft Shadows, Dynamic Accents)
+   ========================================================================== */
+
+:root {
+  /* Canvas & Background Surfaces */
+  --bg-canvas: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-elevated: #FFFFFF;
+  --bg-well: #F1F5F9;
+  --bg-well-subtle: #F8FAFC;
+  --bg-dark-plate: #0F172A;
+
+  /* Typography / Ink Hierarchy */
+  --ink-900: #0F172A;      /* Primary Headings & Bold Text */
+  --ink-800: #1E293B;      /* Primary Body */
+  --ink-600: #475569;      /* Secondary Text */
+  --ink-500: #64748B;      /* Muted & Subtitles */
+  --ink-400: #94A3B8;      /* Placeholders & Dim icons */
+  --ink-300: #CBD5E1;      /* Subtle dividers */
+
+  /* Borders & Hairlines */
+  --border-subtle: #F1F5F9;
+  --border-base: #E2E8F0;
+  --border-strong: #CBD5E1;
+
+  /* Accents & Brand Colors */
+  --accent-primary: #2563EB;
+  --accent-indigo: #4F46E5;
+  --accent-emerald: #10B981;
+  --accent-amber: #F59E0B;
+  --accent-rose: #F43F5E;
+  --accent-violet: #8B5CF6;
+
+  /* Modern Drop Shadows */
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.03);
+}
+
+/* ==========================================================================
+   MODERN COMPONENT CLASSES (with backward-compatible class hooks)
+   ========================================================================== */
+
+/* Modern Elevated Card */
+.skeuo-plate,
+.modern-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-base);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+  border-radius: 1rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.skeuo-plate-hover:hover,
+.modern-card-hover:hover {
+  transform: translateY(-2px);
+  border-color: #CBD5E1;
+  box-shadow: 0 10px 20px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+}
+
+/* Modern Inset Container / Search field wrapper */
+.skeuo-well,
+.modern-well {
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 0.75rem;
+  transition: all 0.15s ease;
+}
+
+.skeuo-well:focus-within,
+.modern-well:focus-within {
+  background-color: #FFFFFF;
+  border-color: #93C5FD;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+/* Modern Secondary / Default Button */
+.skeuo-button,
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.625rem 1.125rem;
+  border-radius: 0.75rem;
+  background: #FFFFFF;
+  color: var(--ink-800);
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  user-select: none;
+}
+
+.skeuo-button:hover,
+.btn-secondary:hover {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+  color: var(--ink-900);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.07);
+}
+
+.skeuo-button:active,
+.btn-secondary:active {
+  transform: translateY(0);
+  background: #F1F5F9;
+}
+
+/* Modern Primary / Brand Button */
+.skeuo-button-dark,
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.625rem 1.125rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+  color: #FFFFFF;
+  border: 1px solid #0F172A;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12), 0 1px 2px rgba(15, 23, 42, 0.08);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  user-select: none;
+}
+
+.skeuo-button-dark:hover,
+.btn-primary:hover {
+  background: linear-gradient(135deg, #334155 0%, #1E293B 100%);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+  transform: translateY(-1px);
+}
+
+.skeuo-button-dark:active,
+.btn-primary:active {
+  transform: translateY(0);
+  background: #0F172A;
+}
+
+/* Vibrant Blue Button */
+.btn-blue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  color: #FFFFFF;
+  border: 1px solid #1D4ED8;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3), 0 1px 2px rgba(37, 99, 235, 0.2);
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.btn-blue:hover {
+  background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Modern Pill Badge */
+.skeuo-badge,
+.modern-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  color: #334155;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+/* Sleek subtle live pulse dot */
+.skeuo-led {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #10B981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.skeuo-led-amber {
+  background-color: #F59E0B;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+/* Showcase Modern Bezel (Clean Glassmorphic Frame) */
+.skeuo-hardware-bezel,
+.modern-showcase-frame {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
+  border-radius: 1.25rem;
+}
+
+/* Glassmorphism helpers */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}

@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": ".",
+    "outDir": "dist",
+    /**
+     * Strict mode is on. It used to be off, which meant the type system was
+     * largely decorative: `env` was typed `T | undefined` at every use site
+     * and 86 strict errors were being hidden. `npm run typecheck:strict`
+     * reports the progress towards removing the remaining `any` usage.
+     */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUncheckedIndexedAccess": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node"]
+  },
+  "include": [
+    "server.ts",
+    "config/**/*.ts",
+    "controllers/**/*.ts",
+    "middleware/**/*.ts",
+    "models/**/*.ts",
+    "routes/**/*.ts",
+    "scripts/**/*.ts",
+    "services/**/*.ts",
+    "utils/**/*.ts",
+    "types/**/*.ts",
+    "types/**/*.d.ts"
+  ],
+  "exclude": ["dist", "node_modules", "tests"]
+}

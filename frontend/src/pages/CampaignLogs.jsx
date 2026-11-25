@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from '../api/axios';
-import Navbar from '../components/Navbar';
+import { listOf } from '../api/collections';
 
 const CampaignLogs = () => {
   const { id } = useParams();
@@ -23,8 +23,9 @@ const CampaignLogs = () => {
     setLoading(true);
     try {
       const res = await axios.get(`/logs/${id}`);
-      setLogs(res.data);
-      const stats = res.data.reduce((acc, log) => {
+      const logList = listOf(res.data, 'logs');
+      setLogs(logList);
+      const stats = logList.reduce((acc, log) => {
         acc.total++;
         if (log.status === 'SENT') acc.sent++;
         else if (log.status === 'FAILED') acc.failed++;
@@ -35,8 +36,10 @@ const CampaignLogs = () => {
       setStatistics(stats);
       
       try {
-        const campaignRes = await axios.get(`/campaigns`);
-        setCampaign(campaignRes.data);
+        const campaignRes = await axios.get('/campaigns');
+        const campaignList = listOf(campaignRes.data, 'campaigns');
+        const matched = campaignList.find((c) => String(c._id) === String(id));
+        setCampaign(matched || null);
       } catch (err) {
         console.error('Error fetching campaign details:', err);
       }
@@ -48,6 +51,8 @@ const CampaignLogs = () => {
     }
   };
     fetchLogs();
+    const timer = setInterval(fetchLogs, 5000);
+    return () => clearInterval(timer);
   }, [id]);
 
   const getStatusBadge = (status) => {
@@ -59,9 +64,11 @@ const CampaignLogs = () => {
     };
     
     const labels = {
-      SENT: 'Delivered',
+      SENT: 'Accepted by mail server',
       FAILED: 'Failed',
-      PENDING: 'Pending'
+      PENDING: 'Pending',
+      SKIPPED: 'Suppressed',
+      UNKNOWN: 'Needs review'
     };
 
     return (
@@ -84,11 +91,8 @@ const CampaignLogs = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-                <div className="mb-6">
+    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">
             {campaign ? campaign.name : 'Campaign'} Delivery Status
           </h1>
@@ -202,7 +206,6 @@ const CampaignLogs = () => {
           )}
         </div>
       </div>
-    </div>
   );
 };
 

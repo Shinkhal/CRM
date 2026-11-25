@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import axios from '../api/axios';
-import { useAuth } from '../context/AuthContext';
-import Navbar from '../components/Navbar';
+import { useAuth } from '../context/authContext.js';
 import { toast } from 'react-toastify';
-import {  Lightbulb, Loader, Database, Calendar, Users, ShoppingCart, MessageSquare, TrendingUp } from 'lucide-react';
+import { Lightbulb, Loader, Database, Calendar, Users, ShoppingCart, MessageSquare, TrendingUp } from 'lucide-react';
 
 const Reports = () => {
   const { accessToken } = useAuth();
@@ -12,17 +11,12 @@ const Reports = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-
-  const fetchInsights = async () => {
+  const fetchInsights = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const res = await axios.get('/dashboard/insights', {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      const res = await axios.get('/dashboard/insights');
       
       setInsights(res.data.insights || []);
       setMetadata(res.data.metadata || null);
@@ -38,11 +32,11 @@ const Reports = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (accessToken) fetchInsights();
-  }, [accessToken,]);
+  }, [accessToken, fetchInsights]);
 
   const getDataIcon = (type) => {
     const icons = {
@@ -55,10 +49,7 @@ const Reports = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-blue-50">
-      <Navbar />
-
-      <div className="max-w-6xl mx-auto px-4 py-10">
+    <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Business Insights & Growth Tips</h1>
@@ -202,7 +193,6 @@ const Reports = () => {
           )}
         </div>
       </div>
-    </div>
   );
 };
 

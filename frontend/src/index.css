@@ -1,31 +1,43 @@
 @import "tailwindcss";
+@import "./styles/fonts.css";
+@import "./styles/theme.css";
 
 ::-webkit-scrollbar {
   display: none;
 }
 
 @theme {
-  /* Background layers */
-  --color-primary: #F7F9FC;      /* main background */
-  --color-secondary: #FFFFFF;    /* card background */
-  --color-elevated: #F1F5F9;     /* subtle surface */
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 
-  /* Borders */
-  --color-border-soft: #E2E8F0;
-  --color-border-strong: #CBD5E1;
+  /* Tactile Light Theme Palette */
+  --color-canvas: #F6F7FA;
+  --color-card: #FFFFFF;
+  --color-well: #EEF1F6;
+  --color-well-subtle: #F4F6F9;
 
-  /* Text */
-  --color-text-primary: #1E293B;
-  --color-text-secondary: #64748B;
+  --color-ink-900: #111827;
+  --color-ink-800: #1F2937;
+  --color-ink-600: #4B5563;
+  --color-ink-500: #6B7280;
+  --color-ink-400: #9CA3AF;
 
-  /* Accent colors (modern, vibrant) */
-  --color-accent: #3B82F6;        /* blue */
-  --color-accent-glow: #6366F1;   /* indigo */
-  --color-success: #22C55E;
-  --color-warn: #F59E0B;
-  --color-danger: #EF4444;
+  --color-border-base: #E2E6EE;
+  --color-border-strong: #CBD2DF;
+  --color-border-subtle: #EDF0F5;
 
-  /* Shadows */
-  --shadow-soft: 0 4px 20px rgba(0,0,0,0.08);
-  --shadow-glow: 0 0 24px rgba(59,130,246,0.3);
+  --color-carbon: #181E29;
+  --color-cobalt: #2563EB;
+  --color-emerald: #059669;
+  --color-amber: #D97706;
+
+  /* Legacy aliases for backward compatibility */
+  --color-primary: #F6F7FA;
+  --color-secondary: #FFFFFF;
+  --color-elevated: #FAFBFD;
+  --color-border-soft: #E2E6EE;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4B5563;
+  --color-accent: #2563EB;
 }
